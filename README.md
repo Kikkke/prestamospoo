@@ -30,3 +30,11 @@ La navegación funciona. Los campos son editables, pero los resultados son ejemp
 - CMakeLists.txt: compilación con Qt Widgets y AUTOMOC.
 
 Requiere C++17, Qt Widgets, CMake y un compilador compatible. Admite Qt 5 o Qt 6. El HTML anterior permanece separado en ../Cascaron.
+
+## Distribución del tablero
+
+Inicio reúne condiciones del préstamo, tres tarjetas de resultados y tabla de amortización. El menú lateral contiene Inicio, Historial, Comparador y Acerca de; la barra superior indica la sección actual. El interior comparte el fondo decorativo del login, con ilustraciones pequeñas y acentos cobre. Las tarjetas tienen bordes finos y relieve discreto inspirado en DESIGN.md; los criterios están en DISENO.md. Acceso y registro conservan la distribución de dos columnas y comparten el estilo de tarjetas. Todos los resultados siguen siendo ejemplos fijos.
+
+## Guía y glosario
+
+Acerca de incluye ocho apartados desplegables: alcance, recorrido de pantallas, tasa de interés, ejemplo de amortización, efecto de monto/tasa/plazo, lectura de tablas, glosario de 32 conceptos y fuentes oficiales. El contenido está en ContenidoAyuda.h. Los ejemplos educativos no activan cálculos reales ni cambian los datos fijos del tablero.

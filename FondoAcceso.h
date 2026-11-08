@@ -18,7 +18,7 @@ protected:
         p.fillRect(rect(), QColor("#08090c"));
         p.scale(width() / 1180.0, height() / 820.0);
         QRadialGradient halo(420, 380, 540);
-        halo.setColorAt(0, QColor(119, 53, 35, 95));
+        halo.setColorAt(0, QColor(119, 53, 35, 65));
         halo.setColorAt(1, QColor(8, 9, 12, 0));
         p.fillRect(QRectF(0, 0, 1180, 820), halo);
         QPainterPath cinta;
@@ -29,7 +29,7 @@ protected:
         cinta.closeSubpath();
         QLinearGradient luz(280, 200, 820, 500);
         luz.setColorAt(0, QColor(168, 68, 36, 15));
-        luz.setColorAt(0.45, QColor(167, 72, 42, 120));
+        luz.setColorAt(0.45, QColor(167, 72, 42, 65));
         luz.setColorAt(1, QColor(28, 18, 20, 0));
         p.fillPath(cinta, luz);
     }
