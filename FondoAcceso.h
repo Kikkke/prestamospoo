@@ -64,8 +64,13 @@ protected:
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
         if (!imagen.isNull()) {
-            const auto ajustada = imagen.scaled(size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
-            p.drawPixmap((width() - ajustada.width()) / 2, (height() - ajustada.height()) / 2, ajustada);
+            // Escalar a píxeles físicos evita perder detalle en pantallas HiDPI.
+            const qreal densidad = devicePixelRatioF();
+            auto ajustada = imagen.scaled(size() * densidad, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            ajustada.setDevicePixelRatio(densidad);
+            const QSizeF logica = QSizeF(ajustada.size()) / densidad;
+            p.drawPixmap(QPointF((width() - logica.width()) / 2,
+                                (height() - logica.height()) / 2), ajustada);
             return;
         }
         // Composición geométrica provisional hasta que se añada acceso.png.
