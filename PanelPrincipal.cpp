@@ -1,6 +1,7 @@
 #include "PanelPrincipal.h"
 #include "FondoAcceso.h"
-#include "ContenidoAyuda.h"
+#include "PantallaAyuda.h"
+#include "HistorialSimulaciones.h"
 #include <QButtonGroup>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -214,27 +215,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     sim->addStretch();
 
     auto *hist = pagina(pantallas, "Historial de simulaciones", "HISTORIAL  /  Registros de muestra. No se han guardado simulaciones reales.", "historial.png");
-    auto *lista = tabla(hist, {"Nombre", "Monto MXN", "Tasa anual", "Plazo"},
-                       {{"Computadora", "12,000.00", "0 %", "3 meses"},
-                        {"Computadora a 6 meses", "12,000.00", "0 %", "6 meses"}});
-    lista->selectRow(0);
-    auto *acciones = new QHBoxLayout;
-    hist->addLayout(acciones);
-    connect(boton(acciones, "Consultar ejemplo", true), &QPushButton::clicked, this, [this, lista, pantallas]() {
-        if (lista->currentRow() == 0) pantallas->setCurrentIndex(0);
-        else if (lista->currentRow() == 1) pantallas->setCurrentIndex(2);
-        else QMessageBox::information(this, "Selecciona una simulación", "Selecciona una fila para consultar su ejemplo.");
-    });
-    connect(boton(acciones, "Ver confirmación de eliminación"), &QPushButton::clicked, this, [this, lista]() {
-        if (lista->currentRow() < 0) return;
-        QMessageBox dialogo(QMessageBox::Question, "Eliminar simulación",
-            QString("¿Eliminar «%1»?\n\nVista previa: los datos de muestra no se eliminarán.")
-                .arg(lista->item(lista->currentRow(), 0)->text()), QMessageBox::Cancel, this);
-        dialogo.button(QMessageBox::Cancel)->setText("Volver");
-        dialogo.addButton("Eliminar (próximamente)", QMessageBox::DestructiveRole)->setEnabled(false);
-        dialogo.exec();
-    });
-    hist->addStretch();
+    hist->addWidget(new HistorialSimulaciones, 1);
 
     auto *comp = pagina(pantallas, "Compara tus opciones", "COMPARADOR  /  Ejemplo fijo de un mismo monto con diferentes plazos.", "comparador.png");
     auto *seleccion = tarjeta(comp);
@@ -258,49 +239,5 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     comp->addWidget(texto("Menor mensualidad: opción a 6 meses.\nTotal por pagar: ambas opciones cuestan lo mismo. Importes en MXN.", "muted"));
     comp->addStretch();
 
-    auto *info = pagina(pantallas, "Acerca del simulador", "ACERCA DE  /  Calculador de préstamos", "acerca-de.png");
-    info->addWidget(texto("Guía de uso y glosario. Pulsa cada tema para abrirlo o cerrarlo; puedes mantener varios abiertos.", "muted"));
-    auto seccion = [info](const QString &titulo, bool abierta = false) {
-        auto *card = tarjeta(info);
-        auto *abrir = boton(card, titulo);
-        abrir->setCheckable(true);
-        abrir->setChecked(abierta);
-        auto *contenido = new QWidget;
-        contenido->setObjectName("helpContent");
-        auto *interior = new QVBoxLayout(contenido);
-        interior->setContentsMargins(0, 12, 0, 4);
-        interior->setSpacing(16);
-        card->addWidget(contenido);
-        contenido->setVisible(abierta);
-        QObject::connect(abrir, &QPushButton::toggled, contenido, &QWidget::setVisible);
-        return interior;
-    };
-    const auto guia = guiaPrestamos();
-    for (int i = 0; i < guia.size(); ++i) {
-        auto *bloque = seccion(guia[i].first, i == 0);
-        auto *explicacion = texto(guia[i].second);
-        explicacion->setTextFormat(Qt::PlainText);
-        explicacion->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
-        bloque->addWidget(explicacion);
-    }
-    auto *glosario = seccion("7. Glosario: 32 conceptos para entender tu préstamo");
-    for (const auto &termino : glosarioPrestamos()) {
-        glosario->addWidget(texto(termino.first, "section"));
-        auto *definicion = texto(termino.second);
-        definicion->setTextFormat(Qt::PlainText);
-        definicion->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
-        glosario->addWidget(definicion);
-    }
-    auto *fuentes = seccion("8. Fuentes para seguir aprendiendo");
-    fuentes->addWidget(texto("Conceptos contrastados con materiales de educación financiera de Banco de México y CONDUSEF. Los ejemplos numéricos fueron calculados para esta guía; no son ofertas de una institución.", "muted"));
-    for (const auto &enlace : QStringList{
-             "<a href='https://contigo.banxico.org.mx/glosario.html' style='color:#ed916f'>Banco de México · Glosario financiero</a>",
-             "<a href='https://webappsos.condusef.gob.mx/EducaTuCartera/credito.html' style='color:#ed916f'>CONDUSEF · Aprende sobre el crédito</a>",
-             "<a href='https://www.banxico.org.mx/CAT/Explicaciones.html' style='color:#ed916f'>Banco de México · Explicaciones del CAT</a>"}) {
-        auto *link = texto(enlace);
-        link->setOpenExternalLinks(true);
-        link->setTextInteractionFlags(Qt::TextBrowserInteraction);
-        fuentes->addWidget(link);
-    }
-    info->addStretch();
+    pantallas->addWidget(new PantallaAyuda);
 }

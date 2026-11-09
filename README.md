@@ -14,11 +14,11 @@ Aplicación C++ / Qt Widgets con fondo negro con destellos cobre, texto blanco, 
 - Inicio de sesión y creación de cuenta.
 - Simulador como pantalla principal.
 - Resultados de ejemplo y tabla de amortización.
-- Historial y vista previa de confirmación de eliminación.
+- Historial con 20 ejemplos, búsqueda, ordenación y eliminación temporal con confirmación.
 - Comparador de dos plazos.
 - Acerca de e instrucciones breves.
 
-La navegación funciona. Los campos son editables, pero los resultados son ejemplos fijos: no cambian con lo capturado. Los botones de inicio de sesión y registro solo permiten navegar al inicio, sin validar ni crear cuentas. Los botones de cálculo, guardado, comparación y eliminación están deshabilitados. No hay conexión a MySQL ni almacenamiento. La vista previa de eliminación no borra registros.
+La navegación funciona. Los campos son editables, pero los resultados son ejemplos fijos: no cambian con lo capturado. Los botones de inicio de sesión y registro solo permiten navegar al inicio, sin validar ni crear cuentas. Los botones de cálculo, guardado y comparación están deshabilitados. No hay conexión a MySQL ni almacenamiento. El historial permite borrar ejemplos solo durante la ejecución; al reiniciar se restauran los 20 registros, sin afectar al simulador ni al comparador.
 
 ## Archivos
 
@@ -27,6 +27,7 @@ La navegación funciona. Los campos son editables, pero los resultados son ejemp
 - VentanaAcceso.h/.cpp: composición del acceso y navegación al panel.
 - PantallaLogin.h/.cpp y PantallaRegistro.h/.cpp: formularios de cuenta.
 - PanelPrincipal.h/.cpp: menú lateral, pantallas y datos de muestra.
+- HistorialSimulaciones.h: búsqueda por nombre sin distinguir mayúsculas ni acentos, ordenación numérica, contador y eliminación por fila con confirmación.
 - CMakeLists.txt: compilación con Qt Widgets y AUTOMOC.
 
 Requiere C++17, Qt Widgets, CMake y un compilador compatible. Admite Qt 5 o Qt 6. El HTML anterior permanece separado en ../Cascaron.
@@ -37,4 +38,4 @@ Inicio reúne condiciones del préstamo, tres tarjetas de resultados y tabla de 
 
 ## Guía y glosario
 
-Acerca de incluye ocho apartados desplegables: alcance, recorrido de pantallas, tasa de interés, ejemplo de amortización, efecto de monto/tasa/plazo, lectura de tablas, glosario de 32 conceptos y fuentes oficiales. El contenido está en ContenidoAyuda.h. Los ejemplos educativos no activan cálculos reales ni cambian los datos fijos del tablero.
+Acerca de incluye ocho tarjetas de temas: alcance, recorrido de pantallas, tasa de interés, ejemplo de amortización, efecto de monto/tasa/plazo, lectura de tablas, glosario de 32 conceptos y fuentes oficiales. El contenido está en ContenidoAyuda.h. PantallaAyuda.h presenta tarjetas completas pulsables, iconos vectoriales y vistas de lectura con Volver a los temas. La cuadrícula cambia entre tres y dos columnas según el ancho disponible. Los ejemplos educativos no activan cálculos reales ni cambian los datos fijos del tablero.

@@ -30,6 +30,16 @@ inline QString temaOscuro()
         QFrame#sidebar QPushButton:checked { background: #33241f; color: #f1a281; border-color: #624235; }
         QWidget#page { background: transparent; }
         QWidget#helpContent { background: transparent; }
+        QPushButton#topicCard { background: rgba(23,23,25,245); border: 1px solid #484248; border-radius: 16px; text-align: left; }
+        QPushButton#topicCard:hover { background: #242022; border-color: #ed916f; }
+        QPushButton#topicCard:focus { border: 2px solid #ed916f; }
+        QPushButton#topicCard:pressed { background: #33241f; }
+        QPushButton#topicCard QLabel { background: transparent; border: none; }
+        QLabel#topicLink { color: #ed916f; font-size: 13px; font-weight: 600; }
+        QWidget#topicIcon { background: transparent; }
+        QWidget#historyActionCell { background: transparent; }
+        QPushButton#deleteRow { background: transparent; color: #b9ada9; border: 1px solid transparent; border-radius: 6px; padding: 0; font-size: 24px; }
+        QPushButton#deleteRow:hover, QPushButton#deleteRow:focus { background: #33241f; color: #ed916f; border-color: #ed916f; }
         QFrame#topbar { background: #141416; border-bottom: 1px solid #2b292a; }
         QLabel#section { font-size: 17px; font-weight: 600; }
         QLabel#caption { font-size: 12px; color: #a89f9c; }

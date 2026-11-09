@@ -21,6 +21,8 @@ add_executable(CalculadorPrestamos WIN32
     Tema.h
     FondoAcceso.h
     ContenidoAyuda.h
+    PantallaAyuda.h
+    HistorialSimulaciones.h
 )
 target_compile_definitions(CalculadorPrestamos PRIVATE ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets")
 target_link_libraries(CalculadorPrestamos PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
