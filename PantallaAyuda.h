@@ -21,6 +21,7 @@ protected:
     {
         QPainter p(this);
         p.setRenderHint(QPainter::Antialiasing);
+        p.scale(width()/40.0,height()/40.0);
         p.setPen(QPen(QColor("#ed916f"), 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
         p.setBrush(Qt::NoBrush);
         switch (tipo) {
@@ -44,6 +45,12 @@ protected:
         case 6: // Libro.
             p.drawPolyline(QPolygonF{QPointF(20,9),QPointF(5,5),QPointF(5,31),QPointF(20,35),QPointF(35,31),QPointF(35,5),QPointF(20,9),QPointF(20,35)});
             p.drawLine(9,14,15,16); p.drawLine(25,16,31,14); break;
+        case 8: // Dinero.
+            p.drawRoundedRect(QRectF(3,9,34,23),3,3); p.drawEllipse(QRectF(15,15,10,11));
+            p.drawLine(8,20,10,20); p.drawLine(30,20,32,20); break;
+        case 9: // Calendario.
+            p.drawRoundedRect(QRectF(5,8,30,28),3,3); p.drawLine(5,17,35,17);
+            p.drawLine(13,4,13,12); p.drawLine(27,4,27,12); p.drawLine(13,24,20,24); break;
         default: // Enlaces.
             p.drawRoundedRect(QRectF(4,15,20,15),6,6); p.drawRoundedRect(QRectF(16,6,20,15),6,6);
             p.drawLine(14,24,26,14); break;
@@ -86,9 +93,9 @@ public:
     {
         auto *raiz = new QVBoxLayout(this);
         raiz->setContentsMargins(0,0,0,0);
-        auto *vistas = new QStackedWidget;
+        vistas = new QStackedWidget;
         raiz->addWidget(vistas);
-        auto nuevaPagina = [vistas]() {
+        auto nuevaPagina = [this]() {
             auto *fondo = new FondoAcceso;
             fondo->setObjectName("page");
             auto *layout = new QVBoxLayout(fondo);
@@ -175,15 +182,21 @@ public:
                 }
             }
             detalle->addStretch();
-            connect(b,&QPushButton::clicked,this,[vistas,i]() {
+            connect(b,&QPushButton::clicked,this,[this,i]() {
                 vistas->setCurrentIndex(i+1);
                 auto *scroll=qobject_cast<QScrollArea *>(vistas->currentWidget());
                 scroll->verticalScrollBar()->setValue(0);
             });
-            connect(volver,&QPushButton::clicked,this,[vistas,b]() { vistas->setCurrentIndex(0); b->setFocus(); });
+            connect(volver,&QPushButton::clicked,this,[this,b]() { vistas->setCurrentIndex(0); b->setFocus(); });
         }
     }
+    void mostrarTablaAmortizacion() {
+        vistas->setCurrentIndex(6);
+        auto *scroll=qobject_cast<QScrollArea *>(vistas->currentWidget());
+        scroll->verticalScrollBar()->setValue(0);
+    }
 private:
+    QStackedWidget *vistas;
     static QLabel *label(const QString &t,const char *tipo="") {
         auto *l=new QLabel(t); l->setWordWrap(true); l->setObjectName(tipo); return l;
     }

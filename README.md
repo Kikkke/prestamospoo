@@ -15,10 +15,10 @@ Aplicación C++ / Qt Widgets con fondo negro con destellos cobre, texto blanco, 
 - Simulador como pantalla principal.
 - Resultados de ejemplo y tabla de amortización.
 - Historial con 20 ejemplos, búsqueda, ordenación y eliminación temporal con confirmación.
-- Comparador de dos plazos.
+- Comparador de dos ejemplos, con selectores de búsqueda, resúmenes y tabla actualizada.
 - Acerca de e instrucciones breves.
 
-La navegación funciona. Los campos son editables, pero los resultados son ejemplos fijos: no cambian con lo capturado. Los botones de inicio de sesión y registro solo permiten navegar al inicio, sin validar ni crear cuentas. Los botones de cálculo, guardado y comparación están deshabilitados. No hay conexión a MySQL ni almacenamiento. El historial permite borrar ejemplos solo durante la ejecución; al reiniciar se restauran los 20 registros, sin afectar al simulador ni al comparador.
+La navegación funciona. Los campos son editables, pero los resultados son ejemplos fijos: no cambian con lo capturado. Los botones de inicio de sesión y registro solo permiten navegar al inicio, sin validar ni crear cuentas. Los botones de cálculo y guardado están deshabilitados. El comparador muestra resultados precargados al elegir entre seis ejemplos; no calcula nuevos préstamos. No hay conexión a MySQL ni almacenamiento. El historial permite borrar ejemplos solo durante la ejecución; al reiniciar se restauran los 20 registros, sin afectar al simulador ni al comparador.
 
 ## Archivos
 
@@ -39,3 +39,6 @@ Inicio reúne condiciones del préstamo, tres tarjetas de resultados y tabla de 
 ## Guía y glosario
 
 Acerca de incluye ocho tarjetas de temas: alcance, recorrido de pantallas, tasa de interés, ejemplo de amortización, efecto de monto/tasa/plazo, lectura de tablas, glosario de 32 conceptos y fuentes oficiales. El contenido está en ContenidoAyuda.h. PantallaAyuda.h presenta tarjetas completas pulsables, iconos vectoriales y vistas de lectura con Volver a los temas. La cuadrícula cambia entre tres y dos columnas según el ancho disponible. Los ejemplos educativos no activan cálculos reales ni cambian los datos fijos del tablero.
+
+## Interacciones del inicio
+El formulario se organiza en tres pasos con iconos y ayudas. Los accesos de 3, 6, 12 y 24 meses actualizan solo el campo de plazo; el aviso cambia cuando las condiciones difieren del ejemplo inicial. Las métricas y la amortización permanecen fijas. Los encabezados de la tabla tienen explicaciones al pasar el cursor y ¿Cómo se interpreta? abre directamente su tema de Acerca de.

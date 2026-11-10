@@ -1,7 +1,9 @@
 #include "PanelPrincipal.h"
 #include "FondoAcceso.h"
+#include "MarcaFinancionanti.h"
 #include "PantallaAyuda.h"
 #include "HistorialSimulaciones.h"
+#include "ComparadorSimulaciones.h"
 #include <QButtonGroup>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -113,8 +115,9 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     auto *menu = new QVBoxLayout(lateral);
     menu->setContentsMargins(16, 24, 16, 20);
     menu->setSpacing(12);
-    menu->addWidget(texto("PRÉSTAMOS", "brand"));
-    menu->addWidget(texto("Planea con claridad.", "muted"));
+    menu->addWidget(logoFinancionanti(64));
+    menu->addWidget(texto("FinancionantiMex", "brandSidebar"));
+    menu->addWidget(texto("Una forma impresionanti de obtener un préstamo", "caption"));
     menu->addSpacing(24);
     menu->addWidget(texto("ESPACIO DE TRABAJO", "eyebrow"));
     auto *pantallas = new QStackedWidget;
@@ -162,29 +165,66 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     auto *form = tarjeta(zona);
     zona->setStretch(0, 3);
     form->addWidget(texto("Condiciones del préstamo", "section"));
+    form->addWidget(texto("01 · IDENTIFICA TU PLAN", "eyebrow"));
     auto *nombre = new QLineEdit("Computadora");
     campo(form, "Nombre de la simulación", nombre);
+    nombre->setPlaceholderText("Por ejemplo: computadora o estudios");
+    form->addSpacing(8);
+    form->addWidget(texto("02 · MONTO Y TASA", "eyebrow"));
+    auto *condiciones = new QHBoxLayout;
+    condiciones->setSpacing(16);
+    form->addLayout(condiciones);
+    auto *colMonto = new QVBoxLayout;
+    auto *colTasa = new QVBoxLayout;
+    condiciones->addLayout(colMonto, 1);
+    condiciones->addLayout(colTasa, 1);
+    auto campoIcono = [](QVBoxLayout *col, const QString &titulo, QWidget *control, int tipo) {
+        auto *fila = new QHBoxLayout;
+        auto *icono = new IconoTema(tipo); icono->setFixedSize(22,22);
+        fila->addWidget(icono);
+        auto *label = texto(titulo); label->setBuddy(control);
+        fila->addWidget(label,1);
+        col->addLayout(fila); col->addWidget(control);
+    };
     auto *monto = new QDoubleSpinBox;
     monto->setRange(0.01, 999999999.99);
     monto->setPrefix("$ "); monto->setSuffix(" MXN"); monto->setValue(12000);
-    campo(form, "Monto solicitado", monto);
-    auto *opciones = new QHBoxLayout;
-    opciones->setSpacing(16);
-    form->addLayout(opciones);
-    auto *colTasa = new QVBoxLayout;
-    auto *colPlazo = new QVBoxLayout;
-    opciones->addLayout(colTasa, 1);
-    opciones->addLayout(colPlazo, 1);
+    monto->setMinimumWidth(0); monto->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Fixed);
+    campoIcono(colMonto, "Monto solicitado", monto, 8);
     auto *tasa = new QDoubleSpinBox;
     tasa->setRange(0, 1000); tasa->setSuffix(" %");
-    campo(colTasa, "Tasa nominal anual", tasa);
+    campoIcono(colTasa, "Tasa nominal anual", tasa, 2);
+    form->addWidget(texto("Escribe 12 para una tasa anual del 12 %. No introduzcas el CAT.", "caption"));
+    form->addSpacing(8);
+    form->addWidget(texto("03 · ELIGE EL PLAZO", "eyebrow"));
     auto *meses = new QSpinBox;
     meses->setRange(1, 600); meses->setSuffix(" meses"); meses->setValue(3);
-    campo(colPlazo, "Plazo", meses);
+    campoIcono(form, "Tiempo para pagar", meses, 9);
+    auto *plazos = new QHBoxLayout;
+    plazos->setSpacing(8); form->addLayout(plazos);
+    for(int plazo : {3,6,12,24}) {
+        auto *rapido = boton(plazos, QString::number(plazo)+" meses");
+        rapido->setObjectName("quickTerm"); rapido->setCheckable(true);
+        rapido->setChecked(plazo==meses->value());
+        connect(rapido,&QPushButton::clicked,this,[meses,plazo]() { meses->setValue(plazo); });
+        connect(meses,qOverload<int>(&QSpinBox::valueChanged),rapido,[rapido,plazo](int valor) { rapido->setChecked(valor==plazo); });
+        // Pulsar el plazo activo debe conservar su selección.
+        connect(rapido,&QPushButton::clicked,rapido,[rapido,meses,plazo]() { rapido->setChecked(meses->value()==plazo); });
+    }
     boton(form, "Calcular préstamo · Próximamente", true)->setEnabled(false);
-    form->addWidget(texto("Los resultados son un ejemplo fijo: no cambian al editar estos campos.", "muted"));
+    auto *estado = texto("Resultado de muestra: Computadora · $12,000 · 0 % anual · 3 meses.", "sampleNotice");
+    form->addWidget(estado);
+    auto actualizarAviso = [nombre,monto,tasa,meses,estado]() {
+        const bool editado=nombre->text()!="Computadora" || monto->value()!=12000 || tasa->value()!=0 || meses->value()!=3;
+        estado->setText(editado
+            ? "Cambiaste las condiciones. Los resultados siguen correspondiendo al ejemplo inicial: $12,000 · 0 % anual · 3 meses."
+            : "Resultado de muestra: Computadora · $12,000 · 0 % anual · 3 meses.");
+    };
+    connect(nombre,&QLineEdit::textChanged,this,actualizarAviso);
+    connect(monto,qOverload<double>(&QDoubleSpinBox::valueChanged),this,actualizarAviso);
+    connect(tasa,qOverload<double>(&QDoubleSpinBox::valueChanged),this,actualizarAviso);
+    connect(meses,qOverload<int>(&QSpinBox::valueChanged),this,actualizarAviso);
     form->addStretch();
-
     auto *metricas = new QVBoxLayout;
     metricas->setSpacing(12);
     zona->addLayout(metricas, 2);
@@ -196,7 +236,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
         c->addWidget(texto(titulos[i], "muted"));
         auto *valor = texto(valores[i], i == 0 ? "metricAccent" : "metric");
         c->addWidget(valor);
-        c->addWidget(texto("MXN · Ejemplo", "caption"));
+        c->addWidget(texto("MXN · Resultado de muestra", "caption"));
     }
     auto *detalle = tarjeta(sim);
     auto *encabezado = new QHBoxLayout;
@@ -204,10 +244,23 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     encabezado->addWidget(texto("Tabla de amortización", "section"));
     encabezado->addStretch();
     encabezado->addWidget(texto("EJEMPLO · 3 MESES · 0 % ANUAL", "badge"));
-    tabla(detalle, {"Mes", "Saldo inicial", "Interés", "Capital", "Pago", "Saldo final"},
+    auto *amortizacion = tabla(detalle, {"Mes", "Saldo inicial", "Interés", "Capital", "Pago", "Saldo final"},
           {{"1", "12,000.00", "0.00", "4,000.00", "4,000.00", "8,000.00"},
            {"2", "8,000.00", "0.00", "4,000.00", "4,000.00", "4,000.00"},
-           {"3", "4,000.00", "0.00", "4,000.00", "4,000.00", "0.00"}})->setFixedHeight(170);
+           {"3", "4,000.00", "0.00", "4,000.00", "4,000.00", "0.00"}});
+    amortizacion->setFixedHeight(170);
+    amortizacion->setObjectName("amortizationTable");
+    amortizacion->setShowGrid(false);
+    amortizacion->setSelectionMode(QAbstractItemView::NoSelection);
+    for(int r=0;r<amortizacion->rowCount();++r)
+        for(int c=0;c<amortizacion->columnCount();++c)
+            amortizacion->item(r,c)->setTextAlignment((c==0?Qt::AlignCenter:Qt::AlignRight)|Qt::AlignVCenter);
+    const QStringList ayudas={"Número del pago mensual.","Lo que debes al comenzar el mes.",
+        "Costo por usar el dinero durante ese mes.","Parte del pago que reduce tu deuda.",
+        "Importe que pagas ese mes: capital más interés.","Lo que queda por pagar después del abono."};
+    for(int c=0;c<ayudas.size();++c) amortizacion->horizontalHeaderItem(c)->setToolTip(ayudas[c]);
+    auto *interpretar = boton(detalle, "¿Cómo se interpreta? →");
+    interpretar->setObjectName("helpLink");
     auto *pie = new QHBoxLayout;
     detalle->addLayout(pie);
     pie->addWidget(texto("Importes en MXN. Sin comisiones, seguros, impuestos ni CAT.", "caption"), 1);
@@ -217,27 +270,13 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     auto *hist = pagina(pantallas, "Historial de simulaciones", "HISTORIAL  /  Registros de muestra. No se han guardado simulaciones reales.", "historial.png");
     hist->addWidget(new HistorialSimulaciones, 1);
 
-    auto *comp = pagina(pantallas, "Compara tus opciones", "COMPARADOR  /  Ejemplo fijo de un mismo monto con diferentes plazos.", "comparador.png");
-    auto *seleccion = tarjeta(comp);
-    auto *a = new QComboBox; a->addItems({"Computadora", "Computadora a 6 meses"});
-    auto *b = new QComboBox; b->addItems({"Computadora", "Computadora a 6 meses"}); b->setCurrentIndex(1);
-    auto *pares = new QHBoxLayout;
-    pares->setSpacing(18);
-    seleccion->addLayout(pares);
-    auto *primera = new QVBoxLayout;
-    auto *segunda = new QVBoxLayout;
-    pares->addLayout(primera, 1);
-    pares->addLayout(segunda, 1);
-    campo(primera, "Primera simulación", a);
-    campo(segunda, "Segunda simulación", b);
-    boton(seleccion, "Comparar (próximamente)")->setEnabled(false);
-    seleccion->addWidget(texto("La tabla de muestra no cambia con la selección.", "muted"));
-    tabla(comp, {"Concepto", "Computadora", "Computadora a 6 meses"},
-          {{"Monto", "$12,000.00", "$12,000.00"}, {"Tasa anual", "0 %", "0 %"},
-           {"Plazo", "3 meses", "6 meses"}, {"Mensualidad", "$4,000.00", "$2,000.00"},
-           {"Intereses", "$0.00", "$0.00"}, {"Total", "$12,000.00", "$12,000.00"}})->setMinimumHeight(290);
-    comp->addWidget(texto("Menor mensualidad: opción a 6 meses.\nTotal por pagar: ambas opciones cuestan lo mismo. Importes en MXN.", "muted"));
+    auto *comp = pagina(pantallas, "Compara tus opciones", "COMPARADOR  /  Explora dos ejemplos y descubre cómo cambian sus pagos y plazos.", "comparador.png");
+    comp->addWidget(new ComparadorSimulaciones);
     comp->addStretch();
-
-    pantallas->addWidget(new PantallaAyuda);
+    auto *ayuda = new PantallaAyuda;
+    pantallas->addWidget(ayuda);
+    connect(interpretar,&QPushButton::clicked,this,[pantallas,ayuda]() {
+        ayuda->mostrarTablaAmortizacion();
+        pantallas->setCurrentWidget(ayuda);
+    });
 }

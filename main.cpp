@@ -5,6 +5,7 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    app.setApplicationName("FinancionantiMex");
     app.setStyle("Fusion");
     app.setStyleSheet(temaOscuro());
     VentanaAcceso ventana;

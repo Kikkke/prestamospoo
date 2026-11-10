@@ -10,6 +10,15 @@ inline QString temaOscuro()
         QFrame#card QLabel { background: transparent; }
         QLabel#title { font-size: 26px; font-weight: 600; }
         QLabel#brand { font-size: 18px; font-weight: 700; letter-spacing: 2px; }
+        QLabel#brandAccess { font-size: 23px; font-weight: 600; }
+        QLabel#brandSidebar { font-size: 17px; font-weight: 600; }
+        QLabel#brandSlogan { font-size: 30px; font-weight: 600; }
+        QLabel#passwordHint { color: #ed916f; font-size: 12px; }
+        QLabel#sampleNotice { color: #d4afa0; font-size: 12px; background: #27201e; border-radius: 8px; padding: 10px; }
+        QWidget#dashboard QPushButton#quickTerm { padding: 7px 6px; font-size: 12px; }
+        QWidget#dashboard QPushButton#helpLink { background: transparent; border: none; color: #ed916f; text-align: left; padding: 8px 0; }
+        QWidget#dashboard QPushButton#helpLink:focus { border: 1px solid #ed916f; }
+        QTableWidget#amortizationTable::item { padding: 0 8px; }
         QLabel#muted { color: #b9ada9; }
         QLabel#metric { font-size: 25px; font-weight: 600; }
         QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox { background: #1b1b20; border: 1px solid #484248; border-radius: 8px; padding: 11px; selection-background-color: #eeeeee; selection-color: #111111; }
@@ -30,6 +39,10 @@ inline QString temaOscuro()
         QFrame#sidebar QPushButton:checked { background: #33241f; color: #f1a281; border-color: #624235; }
         QWidget#page { background: transparent; }
         QWidget#helpContent { background: transparent; }
+        QWidget#comparisonContent { background: transparent; }
+        QLabel#comparisonNotice { background: #27201e; color: #d4afa0; border: 1px solid #49362e; border-radius: 8px; padding: 12px; }
+        QWidget#comparisonContent QComboBox QLineEdit { background: transparent; border: none; padding: 0; }
+        QWidget#comparisonContent QTableWidget::item { padding: 0 10px; }
         QPushButton#topicCard { background: rgba(23,23,25,245); border: 1px solid #484248; border-radius: 16px; text-align: left; }
         QPushButton#topicCard:hover { background: #242022; border-color: #ed916f; }
         QPushButton#topicCard:focus { border: 2px solid #ed916f; }

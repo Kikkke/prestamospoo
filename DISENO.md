@@ -17,3 +17,9 @@ La consulta de estilos de Refero no estuvo disponible por suscripción inactiva.
 
 Se conserva Segoe UI como tipografía nativa de Windows. El documento se utiliza
 como referencia, no como instrucciones para reemplazar el diseño o agregar funciones.
+
+## Comparador
+Referencia principal: dashboard aprobado y captura del comparador. Se mantienen el fondo, Segoe UI y el cobre. Las tarjetas de Acerca de aportan bordes y espaciado. Dos opciones paralelas destacan la mensualidad; tres resúmenes separan pago, total y plazo sin declarar una opción universalmente mejor. Iconos vectoriales solo en búsquedas y resúmenes. Tabla sin cuadrícula, valores alineados a la derecha. Seis ejemplos independientes y resultados precargados; estados explícitos para selección incompleta, empate, mismo ejemplo y distinto monto.
+
+## Identidad FinancionantiMex
+Nombre y eslogan proporcionados por el usuario: FinancionantiMex / Una forma impresionanti de obtener un préstamo. MarcaFinancionanti.h dibuja un emblema vectorial basado en el boceto de bolsa, moneda y cuernos; conserva cobre y fondo transparente. La identidad aparece en acceso, registro y menú compartido, con el emblema como icono de ventana. Se conserva la ilustración del acceso y el fondo original.

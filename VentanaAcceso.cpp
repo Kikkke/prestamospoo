@@ -3,6 +3,7 @@
 #include "PantallaRegistro.h"
 #include "PanelPrincipal.h"
 #include "FondoAcceso.h"
+#include "MarcaFinancionanti.h"
 
 #include <QLabel>
 #include <QFrame>
@@ -11,7 +12,8 @@
 
 VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
 {
-    setWindowTitle(tr("Calculador de préstamos"));
+    setWindowTitle(tr("FinancionantiMex — Simulador de préstamos"));
+    setWindowIcon(iconoFinancionanti());
     resize(1180, 820);
     setMinimumSize(920, 700);
 
@@ -25,12 +27,16 @@ VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
     marca->setObjectName("illustration");
     auto *presentacion = new QVBoxLayout(marca);
     presentacion->setContentsMargins(12, 24, 12, 24);
-    auto *nombre = new QLabel("PRÉSTAMOS");
-    nombre->setObjectName("brand");
-    presentacion->addWidget(nombre);
+    auto *identidad = new QHBoxLayout;
+    identidad->setSpacing(12);
+    identidad->addWidget(logoFinancionanti(68));
+    auto *nombre = new QLabel("FinancionantiMex");
+    nombre->setObjectName("brandAccess");
+    identidad->addWidget(nombre, 1);
+    presentacion->addLayout(identidad);
     presentacion->addWidget(new IlustracionAcceso, 1);
-    auto *mensaje = new QLabel("Dale claridad\na tu siguiente paso.");
-    mensaje->setObjectName("hero");
+    auto *mensaje = new QLabel("Una forma impresionanti\nde obtener un préstamo");
+    mensaje->setObjectName("brandSlogan");
     mensaje->setWordWrap(true);
     presentacion->addWidget(mensaje);
     auto *detalle = new QLabel("Explora tus pagos y compara opciones con claridad.");

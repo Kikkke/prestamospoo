@@ -1,4 +1,5 @@
 #include "PantallaLogin.h"
+#include "CampoContrasena.h"
 
 #include <QFormLayout>
 #include <QLabel>
@@ -15,7 +16,7 @@ PantallaLogin::PantallaLogin(QWidget *parent) : QWidget(parent)
     titulo->setObjectName("title");
     titulo->setWordWrap(true);
     layout->addWidget(titulo);
-    auto *subtitulo = new QLabel(tr("Tus prestamos estan en las manos correctas"), this);
+    auto *subtitulo = new QLabel(tr("Explora y compara tus opciones de préstamo."), this);
     subtitulo->setObjectName("muted");
     subtitulo->setWordWrap(true);
     layout->addWidget(subtitulo);
@@ -24,7 +25,7 @@ PantallaLogin::PantallaLogin(QWidget *parent) : QWidget(parent)
     auto *contrasena = new QLineEdit(this);
     correo->setPlaceholderText("tu@correo.com");
     contrasena->setPlaceholderText(tr("Tu contraseña"));
-    contrasena->setEchoMode(QLineEdit::Password);
+    agregarVisibilidad(contrasena);
 
     auto *formulario = new QFormLayout;
     formulario->setRowWrapPolicy(QFormLayout::WrapAllRows);
@@ -40,13 +41,13 @@ PantallaLogin::PantallaLogin(QWidget *parent) : QWidget(parent)
     layout->addWidget(iniciarSesion);
 
     layout->addWidget(new QLabel(tr("¿No tienes una cuenta?"), this));
-    auto *crearCuenta = new QPushButton(tr("Crear una cuenta"), this);
+    auto *crearCuenta = new QPushButton(tr("Crear cuenta"), this);
     crearCuenta->setObjectName("link");
     layout->addWidget(crearCuenta);
     connect(crearCuenta, &QPushButton::clicked,
             this, &PantallaLogin::crearCuentaSolicitada);
 
-    auto *aviso = new QLabel(tr(":)"), this);
+    auto *aviso = new QLabel(tr("Acceso de demostración. No necesitas introducir datos reales.\n:)"), this);
     aviso->setWordWrap(true);
     aviso->setObjectName("muted");
     layout->addWidget(aviso);
