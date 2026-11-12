@@ -10,6 +10,8 @@ public:
     explicit PantallaLogin(QWidget *parent = nullptr);
 
 signals:
+    void administradorSolicitado();
+    void clienteDeshabilitadoSolicitado();
     void inicioSolicitado();
     void crearCuentaSolicitada();
 };

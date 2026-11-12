@@ -51,5 +51,13 @@ PantallaLogin::PantallaLogin(QWidget *parent) : QWidget(parent)
     aviso->setWordWrap(true);
     aviso->setObjectName("muted");
     layout->addWidget(aviso);
+    auto *adminDemo = new QPushButton("Demo · Administrador", this);
+    adminDemo->setObjectName("link");
+    layout->addWidget(adminDemo);
+    connect(adminDemo, &QPushButton::clicked, this, &PantallaLogin::administradorSolicitado);
+    auto *clienteDemo = new QPushButton("Demo · Cuenta deshabilitada", this);
+    clienteDemo->setObjectName("link");
+    layout->addWidget(clienteDemo);
+    connect(clienteDemo, &QPushButton::clicked, this, &PantallaLogin::clienteDeshabilitadoSolicitado);
     layout->addStretch();
 }

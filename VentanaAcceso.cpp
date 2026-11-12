@@ -2,6 +2,7 @@
 #include "PantallaLogin.h"
 #include "PantallaRegistro.h"
 #include "PanelPrincipal.h"
+#include "PanelAdministrador.h"
 #include "FondoAcceso.h"
 #include "MarcaFinancionanti.h"
 
@@ -62,6 +63,16 @@ VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
     auto *panel = new PanelPrincipal;
     pantallas->addWidget(acceso);
     pantallas->addWidget(panel);
+    auto *admin = new PanelAdministrador;
+    pantallas->addWidget(admin);
+    admin->salir = [pantallas, acceso]() { pantallas->setCurrentWidget(acceso); };
+    connect(login, &PantallaLogin::administradorSolicitado, this, [admin, pantallas]() {
+        if (admin->confirmar("Acceso administrativo de demostración")) pantallas->setCurrentWidget(admin);
+    });
+    connect(login, &PantallaLogin::clienteDeshabilitadoSolicitado, this, [admin, pantallas, panel]() {
+        if (admin->clientes[0].habilitado) pantallas->setCurrentWidget(panel);
+        else admin->accesoCliente();
+    });
 
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);

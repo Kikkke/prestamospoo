@@ -17,6 +17,7 @@ add_executable(CalculadorPrestamos WIN32
     PantallaRegistro.h
     PantallaRegistro.cpp
     PanelPrincipal.h
+    PanelAdministrador.h
     PanelPrincipal.cpp
     Tema.h
     MarcaFinancionanti.h

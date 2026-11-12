@@ -12,6 +12,7 @@ inline QString temaOscuro()
         QLabel#brand { font-size: 18px; font-weight: 700; letter-spacing: 2px; }
         QLabel#brandAccess { font-size: 23px; font-weight: 600; }
         QLabel#brandSidebar { font-size: 17px; font-weight: 600; }
+        QLabel#avatarAdmin { background: #33241f; color: #ed916f; border: 1px solid #624235; border-radius: 20px; font-size: 20px; font-weight: 600; }
         QLabel#brandSlogan { font-size: 30px; font-weight: 600; }
         QLabel#passwordHint { color: #ed916f; font-size: 12px; }
         QLabel#sampleNotice { color: #d4afa0; font-size: 12px; background: #27201e; border-radius: 8px; padding: 10px; }

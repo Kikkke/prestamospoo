@@ -23,3 +23,6 @@ Referencia principal: dashboard aprobado y captura del comparador. Se mantienen 
 
 ## Identidad FinancionantiMex
 Nombre y eslogan proporcionados por el usuario: FinancionantiMex / Una forma impresionanti de obtener un préstamo. MarcaFinancionanti.h dibuja un emblema vectorial basado en el boceto de bolsa, moneda y cuernos; conserva cobre y fondo transparente. La identidad aparece en acceso, registro y menú compartido, con el emblema como icono de ventana. Se conserva la ilustración del acceso y el fondo original.
+
+## Administración y apelaciones
+Referencias: capturas del usuario, tarjetas de Clientes y dashboard aprobado. Se conserva el fondo original y la paleta cobre. Administradores usa dos columnas de tarjetas con avatar vectorial circular, distintivo de sesión y acciones compactas; el alta es la acción principal de la barra de búsqueda. Apelaciones separa el resumen por estado, los filtros y el mensaje del cliente, con aprobar como acción principal y rechazar como secundaria. Las fichas administrativas requieren el folio de la sesión activa; no muestran contraseñas ni folios de otras cuentas.

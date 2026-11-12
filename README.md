@@ -42,3 +42,8 @@ Acerca de incluye ocho tarjetas de temas: alcance, recorrido de pantallas, tasa 
 
 ## Interacciones del inicio
 El formulario se organiza en tres pasos con iconos y ayudas. Los accesos de 3, 6, 12 y 24 meses actualizan solo el campo de plazo; el aviso cambia cuando las condiciones difieren del ejemplo inicial. Las métricas y la amortización permanecen fijas. Los encabezados de la tabla tienen explicaciones al pasar el cursor y ¿Cómo se interpreta? abre directamente su tema de Acerca de.
+
+## Panel administrativo de demostración
+El directorio de administradores presenta tarjetas con avatar, búsqueda por nombre o correo y acceso a una ficha mediante el folio del administrador de la sesión activa. El alta solicita nombre, correo, contraseña y fecha de nacimiento; valida mayoría de edad y correo único, y entrega un folio automático para copiar. La contraseña no se conserva en este prototipo ni se muestra en las fichas. Apelaciones incluye contadores de pendientes, aprobadas y rechazadas, búsqueda y filtro por estado.
+
+En el login, Demo · Administrador abre la confirmación de folio. Usa ENR310307GB34 para entrar y confirmar cambios. Clientes permite buscar, filtrar, abrir fichas, deshabilitar cuentas y editar o eliminar sus simulaciones. Administradores permite crear cuentas de muestra y retirar otras; la sesión actual está protegida. Apelaciones permite aprobar y reactivar o rechazar con un motivo. Demo · Cuenta deshabilitada representa a Ana López y comparte el estado de su apelación con el panel. Todos los cambios son temporales. Las nuevas cuentas no autentican accesos reales; las simulaciones editadas aún no se recalculan. La verificación del folio es solo una interacción local de prototipo, no seguridad de producción.
