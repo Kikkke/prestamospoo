@@ -1,3 +1,7 @@
+#include <memory>
+#include "AvatarUsuario.h"
+#include "EditarPerfil.h"
+#include <QCryptographicHash>
 #include "PanelPrincipal.h"
 #include "FondoAcceso.h"
 #include "MarcaFinancionanti.h"
@@ -122,7 +126,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     menu->addWidget(texto("ESPACIO DE TRABAJO", "eyebrow"));
     auto *pantallas = new QStackedWidget;
     auto *grupo = new QButtonGroup(this);
-    const QStringList nombres = {"Inicio · Simulador", "Historial", "Comparador", "Acerca de"};
+    const QStringList nombres = {"Inicio · Simulador", "Historial", "Comparador", "Acerca de", "Mi cuenta"};
     for (int i = 0; i < nombres.size(); ++i) {
         auto *b = boton(menu, nombres[i]);
         b->setCheckable(true);
@@ -275,6 +279,37 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     comp->addStretch();
     auto *ayuda = new PantallaAyuda;
     pantallas->addWidget(ayuda);
+    auto *cuenta=pagina(pantallas,"Mi cuenta","PERFIL  /  Consulta y edita tus datos de demostración.");
+    auto *marco=new QFrame;marco->setObjectName("card");cuenta->addWidget(marco);
+    auto *perfil=new QVBoxLayout(marco);perfil->setContentsMargins(24,24,24,24);perfil->setSpacing(24);
+    auto *cabecera=new QHBoxLayout;cabecera->setSpacing(20);perfil->addLayout(cabecera);
+    auto *avatar=new AvatarCliente;avatar->setFixedSize(80,80);cabecera->addWidget(avatar);
+    auto *identidad=new QVBoxLayout;cabecera->addLayout(identidad,1);
+    identidad->addWidget(texto("MI PERFIL","eyebrow"));
+    auto *nombrePerfil=texto("","title");identidad->addWidget(nombrePerfil);
+    identidad->addWidget(texto("Cuenta de cliente","muted"));
+    auto *editar=new QPushButton;editar->setFixedSize(44,44);editar->setObjectName("primary");
+    editar->setToolTip("Editar mis datos");editar->setAccessibleName("Editar mis datos");editar->setCursor(Qt::PointingHandCursor);
+    QPixmap lapiz(24,24);lapiz.fill(Qt::transparent);
+    {QPainter p(&lapiz);p.setRenderHint(QPainter::Antialiasing);p.setPen(QPen(QColor("#17100e"),1.8,Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));p.setBrush(Qt::NoBrush);
+     QPolygonF contorno;contorno<<QPointF(4,16)<<QPointF(16,4)<<QPointF(20,8)<<QPointF(8,20)<<QPointF(3,21)<<QPointF(4,16);p.drawPolyline(contorno);p.drawLine(QPointF(13,7),QPointF(17,11));}
+    editar->setIcon(QIcon(lapiz));editar->setIconSize(QSize(24,24));cabecera->addWidget(editar);
+    auto *campos=new QGridLayout;campos->setHorizontalSpacing(32);campos->setVerticalSpacing(10);perfil->addLayout(campos);
+    campos->addWidget(texto("CORREO ELECTRÓNICO","caption"),0,0);
+    campos->addWidget(texto("FECHA DE NACIMIENTO","caption"),0,1);
+    auto *correoPerfil=texto("","section");auto *fechaPerfil=texto("","section");
+    campos->addWidget(correoPerfil,1,0);campos->addWidget(fechaPerfil,1,1);
+    campos->addWidget(texto("CONTRASEÑA","caption"),2,0);campos->addWidget(texto("••••••••","section"),3,0);
+    campos->addWidget(texto("Puedes cambiarla desde el botón de edición.","muted"),3,1);
+    struct PerfilDemo {QString nombre="Cliente de muestra",correo="cliente@demo.mx";QDate nacimiento{2000,1,1};QByteArray clave;};
+    auto modelo=std::make_shared<PerfilDemo>();
+    auto actualizar=[modelo,nombrePerfil,correoPerfil,fechaPerfil](){nombrePerfil->setText(modelo->nombre);correoPerfil->setText(modelo->correo);fechaPerfil->setText(modelo->nacimiento.toString("dd/MM/yyyy"));};actualizar();
+    connect(editar,&QPushButton::clicked,this,[this,modelo,actualizar](){
+        if(editarPerfil(this,modelo->nombre,modelo->correo,modelo->nacimiento,[modelo](const QString &,const QString &clave){if(!clave.isEmpty())modelo->clave=QCryptographicHash::hash(clave.toUtf8(),QCryptographicHash::Sha256);return true;}))actualizar();
+    });
+    perfil->addWidget(texto("Cambios temporales de demostración. No modifican credenciales de acceso reales.","caption"));
+    cuenta->addStretch();
+
     connect(interpretar,&QPushButton::clicked,this,[pantallas,ayuda]() {
         ayuda->mostrarTablaAmortizacion();
         pantallas->setCurrentWidget(ayuda);

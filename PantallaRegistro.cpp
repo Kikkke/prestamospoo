@@ -1,5 +1,6 @@
 #include "PantallaRegistro.h"
 #include "CampoContrasena.h"
+#include "CampoNacimiento.h"
 
 #include <QFormLayout>
 #include <QLabel>
@@ -32,11 +33,13 @@ PantallaRegistro::PantallaRegistro(QWidget *parent) : QWidget(parent)
     agregarVisibilidad(contrasena);
     agregarVisibilidad(confirmacion);
 
+    auto *nacimiento = crearCampoNacimiento(this);
     auto *formulario = new QFormLayout;
     formulario->setRowWrapPolicy(QFormLayout::WrapAllRows);
     formulario->setSpacing(8);
     formulario->addRow(tr("&Nombre:"), nombre);
     formulario->addRow(tr("&Correo electrónico:"), correo);
+    formulario->addRow(tr("Fecha de &nacimiento:"), nacimiento);
     formulario->addRow(tr("C&ontraseña:"), contrasena);
     formulario->addRow(tr("Con&firmar contraseña:"), confirmacion);
     layout->addLayout(formulario);

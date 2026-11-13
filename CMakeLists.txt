@@ -4,11 +4,13 @@ project(CalculadorPrestamos VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 add_executable(CalculadorPrestamos WIN32
+    controles.qrc
     main.cpp
     VentanaAcceso.h
     VentanaAcceso.cpp
@@ -21,6 +23,7 @@ add_executable(CalculadorPrestamos WIN32
     PanelPrincipal.cpp
     Tema.h
     MarcaFinancionanti.h
+    CampoNacimiento.h
     CampoContrasena.h
     FondoAcceso.h
     ContenidoAyuda.h

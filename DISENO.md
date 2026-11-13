@@ -26,3 +26,5 @@ Nombre y eslogan proporcionados por el usuario: FinancionantiMex / Una forma imp
 
 ## Administración y apelaciones
 Referencias: capturas del usuario, tarjetas de Clientes y dashboard aprobado. Se conserva el fondo original y la paleta cobre. Administradores usa dos columnas de tarjetas con avatar vectorial circular, distintivo de sesión y acciones compactas; el alta es la acción principal de la barra de búsqueda. Apelaciones separa el resumen por estado, los filtros y el mensaje del cliente, con aprobar como acción principal y rechazar como secundaria. Las fichas administrativas requieren el folio de la sesión activa; no muestran contraseñas ni folios de otras cuentas.
+
+Clientes adopta la referencia aprobada de Administradores: avatar de 56 px, distintivo de estado, tarjetas de dos columnas, márgenes de 20 px y acciones compactas. La ficha agrupa identidad y estado en un encabezado; separa monto, tasa y plazo en columnas y conserva la confirmación por folio para cambios.
