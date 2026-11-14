@@ -10,6 +10,7 @@
 #include <QFrame>
 #include <QStackedWidget>
 #include <QVBoxLayout>
+#include <QScrollArea>
 
 VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
 {
@@ -58,7 +59,11 @@ VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
     tarjeta->setMaximumWidth(470);
     auto *tarjetaLayout = new QVBoxLayout(tarjeta);
     tarjetaLayout->setContentsMargins(28, 24, 28, 24);
-    tarjetaLayout->addWidget(formularios);
+    auto *scrollFormularios=new QScrollArea;
+    scrollFormularios->setWidgetResizable(true);
+    scrollFormularios->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollFormularios->setWidget(formularios);
+    tarjetaLayout->addWidget(scrollFormularios);
     fila->addWidget(tarjeta, 1);
     auto *panel = new PanelPrincipal;
     pantallas->addWidget(acceso);

@@ -21,11 +21,11 @@ inline bool editarPerfil(QWidget *padre,QString &nombre,QString &correo,QDate &n
     f->addRow("Nombre",n);f->addRow("Correo",c);f->addRow("Fecha de nacimiento",fecha);
     f->addRow("Nueva contraseña",clave);f->addRow("Confirmar nueva contraseña",repetir);
     auto *error=new QLabel;error->setWordWrap(true);error->setObjectName("passwordHint");l->addWidget(error);
-    auto *acciones=new QHBoxLayout;l->addLayout(acciones);auto *cancelar=new QPushButton("Cancelar");auto *guardar=new QPushButton("Guardar cambios");guardar->setObjectName("primary");acciones->addWidget(cancelar);acciones->addWidget(guardar);
+    auto *acciones=new QHBoxLayout;l->addLayout(acciones);auto *cancelar=new QPushButton("Cancelar");auto *guardar=new QPushButton("Guardar cambios");guardar->setObjectName("primary");guardar->setDefault(true);cancelar->setAutoDefault(false);acciones->addWidget(cancelar);acciones->addWidget(guardar);
     QObject::connect(cancelar,&QPushButton::clicked,&d,&QDialog::reject);
     QObject::connect(guardar,&QPushButton::clicked,&d,[&](){
         if(n->text().trimmed().size()<3||!QRegularExpression(R"(^[^\s@]+@[^\s@]+\.[^\s@]+$)").match(c->text().trimmed()).hasMatch()){error->setText("Revisa el nombre y el correo.");return;}
-        if(clave->text()!=repetir->text()){error->setText("Las contraseñas no coinciden.");return;}
+        if(clave->text()!=repetir->text()){error->setText("Las contraseñas no coinciden. Revisa la confirmación.");repetir->setFocus();return;}
         if(!autorizar(c->text().trimmed(),clave->text()))return;
         nombre=n->text().trimmed();correo=c->text().trimmed();nacimiento=fecha->date();d.accept();
     });

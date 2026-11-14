@@ -41,7 +41,7 @@ protected:
         QWidget::resizeEvent(evento);adaptar(evento->size().width());
     }
 private:
-    static QLabel *texto(QString s,const char *nombre=""){auto *x=new QLabel(s);x->setObjectName(nombre);x->setWordWrap(true);return x;}
+    static QLabel *texto(QString s,const char *nombre=""){auto *x=new QLabel(s);x->setTextFormat(Qt::PlainText);x->setObjectName(nombre);x->setWordWrap(true);return x;}
     void actualizar(bool reiniciar=true) {
         if(reiniciar)pagina=0;visibles.clear();QSet<QString> personas;int apelaciones=0;
         for(int i=0;i<eventos.size();++i){const auto &e=eventos[i];
@@ -111,6 +111,7 @@ public:
         for(auto *c:{desde,hasta})connect(c,&QDateEdit::dateChanged,this,[this](){actualizar();});
         connect(limpiar,&QPushButton::clicked,this,[this](){buscar->clear();admin->setCurrentIndex(0);tipo->setCurrentIndex(0);desde->setDate(QDate::currentDate().addDays(-30));hasta->setDate(QDate::currentDate());actualizar();});
         connect(anterior,&QPushButton::clicked,this,[this](){--pagina;actualizar(false);});connect(siguiente,&QPushButton::clicked,this,[this](){++pagina;actualizar(false);});
-        connect(tabla,&QTableWidget::cellClicked,this,[this](int r,int){detalle(r);});actualizar();adaptar(width());
+        connect(tabla,&QTableWidget::cellClicked,this,[this](int r,int){detalle(r);});
+        connect(tabla,&QTableWidget::itemActivated,this,[this](QTableWidgetItem *item){detalle(item->row());});actualizar();adaptar(width());
     }
 };

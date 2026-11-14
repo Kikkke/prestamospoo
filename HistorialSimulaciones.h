@@ -1,4 +1,5 @@
 #pragma once
+#include "VentanaAmortizacion.h"
 #include <QFrame>
 #include <QHeaderView>
 #include <QLabel>
@@ -42,7 +43,7 @@ public:
         contador->setObjectName("caption");
         barra->addWidget(contador);
         layout->addLayout(barra);
-        auto *indicacion = new QLabel("Pulsa un encabezado para ordenar. La X elimina el registro después de confirmar.");
+        auto *indicacion = new QLabel("Pulsa un encabezado para ordenar. El icono de tabla abre la amortización. La X elimina el registro después de confirmar.");
         indicacion->setObjectName("muted"); indicacion->setWordWrap(true);
         layout->addWidget(indicacion);
 
@@ -58,7 +59,9 @@ public:
         tabla->setShowGrid(false);
         tabla->setMinimumHeight(430);
         tabla->horizontalHeader()->setSectionResizeMode(0,QHeaderView::Stretch);
-        for(int c=1;c<5;++c) tabla->horizontalHeader()->setSectionResizeMode(c,QHeaderView::ResizeToContents);
+        for(int c=1;c<4;++c) tabla->horizontalHeader()->setSectionResizeMode(c,QHeaderView::ResizeToContents);
+        tabla->horizontalHeader()->setSectionResizeMode(4,QHeaderView::Fixed);
+        tabla->setColumnWidth(4,144);
         layout->addWidget(tabla,1);
         vacio = new QLabel;
         vacio->setObjectName("muted"); vacio->setWordWrap(true);
@@ -95,16 +98,27 @@ public:
             contenedor->setObjectName("historyActionCell");
             auto *accion=new QHBoxLayout(contenedor);
             accion->setContentsMargins(6,4,6,4);
+            accion->setSpacing(8);
+            accion->addStretch();
+            auto *ver=new QPushButton;ver->setFixedSize(34,34);ver->setToolTip("Ver tabla de amortización");ver->setAccessibleName(ver->toolTip());ver->setCursor(Qt::PointingHandCursor);
+            QPixmap icono(24,24);icono.fill(Qt::transparent);{QPainter p(&icono);p.setPen(QPen(QColor("#ed916f"),2));p.drawRect(3,4,18,16);p.drawLine(3,10,21,10);p.drawLine(3,15,21,15);p.drawLine(10,4,10,20);}
+            ver->setIcon(QIcon(icono));accion->addWidget(ver);
+            const QString titulo=nombre->text();const double monto=e.monto,tasa=e.tasa;const int meses=e.meses;
+            connect(ver,&QPushButton::clicked,this,[this,titulo,monto,tasa,meses](){VentanaAmortizacion d(titulo,monto,tasa,meses,this);d.exec();});
             auto *eliminar=new QPushButton(QString::fromUtf8("×"));
             eliminar->setObjectName("deleteRow"); eliminar->setFixedSize(34,34);
             eliminar->setCursor(Qt::PointingHandCursor);
             eliminar->setToolTip("Eliminar simulación: "+nombre->text());
             eliminar->setAccessibleName(eliminar->toolTip());
             accion->addWidget(eliminar,0,Qt::AlignCenter);
+            accion->addStretch();
             tabla->setCellWidget(fila,4,contenedor);
             // La identidad no depende de la posición, que cambia al ordenar o filtrar.
             connect(eliminar,&QPushButton::clicked,this,[this,id]() { confirmarEliminacion(id); });
         }
+        connect(tabla,&QTableWidget::itemActivated,this,[this](QTableWidgetItem *item){
+            int r=item->row();VentanaAmortizacion d(tabla->item(r,0)->text(),tabla->item(r,1)->data(Qt::UserRole).toDouble(),tabla->item(r,2)->data(Qt::UserRole).toDouble(),tabla->item(r,3)->data(Qt::UserRole).toInt(),this);d.exec();
+        });
         tabla->setSortingEnabled(true);
         tabla->sortItems(0,Qt::AscendingOrder);
         connect(buscar,&QLineEdit::textChanged,this,[this]() { filtrar(); });

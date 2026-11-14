@@ -28,6 +28,7 @@
 #include <QLocale>
 
 #include "AvatarUsuario.h"
+#include "FotoPerfil.h"
 
 // Datos exclusivamente ilustrativos; viven durante esta ejecución.
 class PanelAdministrador : public QWidget {
@@ -36,7 +37,7 @@ public:
     struct Sim { QString nombre; double monto; double tasa; int meses; };
     struct Cliente { QString nombre,correo; QDate ultimo; bool habilitado=true; QString motivo; QList<Sim> sims; QDate nacimiento; };
     struct Apelacion { int cliente; QString texto,estado,respuesta; QDate fecha; };
-    struct Admin { QString nombre,correo,folio; QDate nacimiento; QByteArray claveDemo; };
+    struct Admin { QString nombre,correo,folio; QDate nacimiento; QByteArray claveDemo; QPixmap foto; };
     QList<Cliente> clientes;
     QList<Apelacion> apelaciones;
     QList<Admin> admins;
@@ -51,7 +52,8 @@ public:
         auto *lateral=new QFrame; lateral->setObjectName("sidebar"); lateral->setFixedWidth(206);
         auto *menu=new QVBoxLayout(lateral); menu->setContentsMargins(16,24,16,20); menu->setSpacing(12);
         menu->addWidget(logoFinancionanti(64)); menu->addWidget(label("FinancionantiMex","brandSidebar"));
-        menu->addWidget(label("Bienvenido, Enrique","section")); menu->addWidget(label("ADMINISTRACIÓN","eyebrow"));
+        avatarLateral=new AvatarCliente;avatarLateral->setFixedSize(56,56);menu->addWidget(avatarLateral);
+        saludoLateral=label("Bienvenido, Enrique","section");menu->addWidget(saludoLateral); menu->addWidget(label("ADMINISTRACIÓN","eyebrow"));
         auto *navegacion=new QButtonGroup(this);
         navegacion->setExclusive(true);
         for(const auto &s:QStringList{"Clientes","Administradores","Apelaciones","Actividad administrativa"}) {
@@ -92,12 +94,14 @@ public:
         connect(button("Volver al acceso",l),&QPushButton::clicked,&d,&QDialog::reject); d.exec();
     }
 private:
+    AvatarCliente *avatarLateral;QLabel *saludoLateral;
     QScrollArea *scroll; QString pagina="Clientes";
-    static QLabel *label(const QString &s,const char *tipo="") {auto *l=new QLabel(s);l->setWordWrap(true);l->setObjectName(tipo);return l;}
+    static QLabel *label(const QString &s,const char *tipo="") {auto *l=new QLabel(s);l->setTextFormat(Qt::PlainText);l->setWordWrap(true);l->setObjectName(tipo);return l;}
     static QPushButton *button(const QString &s,QBoxLayout *l) {auto *b=new QPushButton(s);b->setCursor(Qt::PointingHandCursor);l->addWidget(b);return b;}
     static QVBoxLayout *card(QBoxLayout *l) {auto *f=new QFrame;f->setObjectName("card");auto *c=new QVBoxLayout(f);c->setContentsMargins(20,16,20,16);c->setSpacing(12);l->addWidget(f);return c;}
     QString estado(int i) const {if(!clientes[i].habilitado)return "Deshabilitada";return clientes[i].ultimo>=QDate::currentDate().addMonths(-6)?"Activo":"Inactivo";}
     void render() {
+        avatarLateral->setFoto(admins.first().foto);saludoLateral->setText("Bienvenido, "+admins.first().nombre);
         auto *viejo=scroll->takeWidget(); if(viejo)viejo->deleteLater();
         auto *f=new FondoAcceso; auto *l=new QVBoxLayout(f);l->setContentsMargins(24,24,24,24);l->setSpacing(16);scroll->setWidget(f);
         l->addWidget(label("ADMINISTRACIÓN / "+pagina,"eyebrow"));l->addWidget(label(pagina,"title"));
@@ -141,7 +145,7 @@ private:
                 auto *frame=new QFrame; frame->setObjectName("card");
                 auto *c=new QVBoxLayout(frame); c->setContentsMargins(20,20,20,20); c->setSpacing(12);
                 auto *cabecera=new QHBoxLayout; auto *avatar=new AvatarCliente; avatar->setFixedSize(56,56);
-                cabecera->addWidget(avatar); cabecera->addStretch();
+                avatar->setFoto(admins[i].foto);cabecera->addWidget(avatar); cabecera->addStretch();
                 cabecera->addWidget(label(i==0?"TU SESIÓN":"ADMINISTRADOR","badge")); c->addLayout(cabecera);
                 c->addWidget(label(admins[i].nombre,"section")); c->addWidget(label(admins[i].correo,"muted"));
                 c->addWidget(label("Consulta su ficha con el folio de tu sesión activa.","caption"));
@@ -243,7 +247,11 @@ private:
         const auto &a=admins[i];
         QDialog d(this);d.setWindowTitle("Información del administrador");d.setMinimumWidth(480);
         auto *l=new QVBoxLayout(&d);l->setContentsMargins(24,24,24,24);l->setSpacing(16);
-        auto *cabecera=new QHBoxLayout;auto *avatar=new AvatarCliente;avatar->setFixedSize(64,64);cabecera->addWidget(avatar);cabecera->addWidget(label(a.nombre,"title"),1);l->addLayout(cabecera);
+        auto *cabecera=new QHBoxLayout;auto *avatar=new AvatarCliente;avatar->setFixedSize(64,64);avatar->setFoto(a.foto);
+        if(i==0){auto *camara=botonFoto();cabecera->addWidget(avatarEditable(avatar,camara));
+            connect(camara,&QPushButton::clicked,&d,[&,i](){if(i!=0)return;if(editarFoto(&d,admins[i].foto,[&](){return confirmar("Cambiar tu foto de perfil");})){avatar->setFoto(admins[i].foto);render();}});
+        }else cabecera->addWidget(avatar);
+        cabecera->addWidget(label(a.nombre,"title"),1);l->addLayout(cabecera);
         l->addWidget(label(i==0?"Sesión actual · Administrador":"Administrador · Mismos permisos","badge"));
         auto *datos=new QFormLayout;datos->setSpacing(16);datos->addRow("Nombre",label(a.nombre));datos->addRow("Correo",label(a.correo));datos->addRow("Fecha de nacimiento",label(a.nacimiento.toString("dd/MM/yyyy")));datos->addRow("Contraseña",label("Protegida · No se muestra"));datos->addRow("Folio",label("Reservado · Se entrega al crear la cuenta"));l->addLayout(datos);
         l->addWidget(label("Consulta autorizada con el folio de Enrique, administrador de la sesión de demostración.","caption"));

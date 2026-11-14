@@ -1,5 +1,6 @@
 #include <memory>
 #include "AvatarUsuario.h"
+#include "FotoPerfil.h"
 #include "EditarPerfil.h"
 #include <QCryptographicHash>
 #include "PanelPrincipal.h"
@@ -27,6 +28,7 @@ namespace {
 QLabel *texto(const QString &contenido, const char *tipo = "")
 {
     auto *label = new QLabel(contenido);
+    label->setTextFormat(Qt::PlainText);
     label->setObjectName(tipo);
     label->setWordWrap(true);
     if (QString::fromLatin1(tipo) == "badge" || QString::fromLatin1(tipo) == "eyebrow")
@@ -122,7 +124,9 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     menu->addWidget(logoFinancionanti(64));
     menu->addWidget(texto("FinancionantiMex", "brandSidebar"));
     menu->addWidget(texto("Una forma impresionanti de obtener un préstamo", "caption"));
-    menu->addSpacing(24);
+    auto *avatarLateral=new AvatarCliente;avatarLateral->setFixedSize(56,56);menu->addWidget(avatarLateral);
+    auto *saludoLateral=texto("Bienvenido, Usuario","section");menu->addWidget(saludoLateral);
+    menu->addSpacing(8);
     menu->addWidget(texto("ESPACIO DE TRABAJO", "eyebrow"));
     auto *pantallas = new QStackedWidget;
     auto *grupo = new QButtonGroup(this);
@@ -139,7 +143,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     });
     menu->addStretch();
     menu->addWidget(texto("MODO PROTOTIPO\nDatos ilustrativos", "muted"));
-    connect(boton(menu, "Volver al acceso"), &QPushButton::clicked, this, [this, pantallas]() {
+    connect(boton(menu, "Cerrar sesión"), &QPushButton::clicked, this, [this, pantallas]() {
         pantallas->setCurrentIndex(0);
         emit salirSolicitado();
     });
@@ -283,7 +287,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     auto *marco=new QFrame;marco->setObjectName("card");cuenta->addWidget(marco);
     auto *perfil=new QVBoxLayout(marco);perfil->setContentsMargins(24,24,24,24);perfil->setSpacing(24);
     auto *cabecera=new QHBoxLayout;cabecera->setSpacing(20);perfil->addLayout(cabecera);
-    auto *avatar=new AvatarCliente;avatar->setFixedSize(80,80);cabecera->addWidget(avatar);
+    auto *avatar=new AvatarCliente;avatar->setFixedSize(80,80);auto *camara=botonFoto();cabecera->addWidget(avatarEditable(avatar,camara));
     auto *identidad=new QVBoxLayout;cabecera->addLayout(identidad,1);
     identidad->addWidget(texto("MI PERFIL","eyebrow"));
     auto *nombrePerfil=texto("","title");identidad->addWidget(nombrePerfil);
@@ -301,9 +305,11 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     campos->addWidget(correoPerfil,1,0);campos->addWidget(fechaPerfil,1,1);
     campos->addWidget(texto("CONTRASEÑA","caption"),2,0);campos->addWidget(texto("••••••••","section"),3,0);
     campos->addWidget(texto("Puedes cambiarla desde el botón de edición.","muted"),3,1);
-    struct PerfilDemo {QString nombre="Cliente de muestra",correo="cliente@demo.mx";QDate nacimiento{2000,1,1};QByteArray clave;};
+    struct PerfilDemo {QString nombre="Cliente de muestra",correo="cliente@demo.mx";QDate nacimiento{2000,1,1};QByteArray clave;QPixmap foto;};
     auto modelo=std::make_shared<PerfilDemo>();
-    auto actualizar=[modelo,nombrePerfil,correoPerfil,fechaPerfil](){nombrePerfil->setText(modelo->nombre);correoPerfil->setText(modelo->correo);fechaPerfil->setText(modelo->nacimiento.toString("dd/MM/yyyy"));};actualizar();
+    connect(camara,&QPushButton::clicked,this,[this,modelo,avatar,avatarLateral](){if(editarFoto(this,modelo->foto,[](){return true;})){avatar->setFoto(modelo->foto);avatarLateral->setFoto(modelo->foto);}});
+
+    auto actualizar=[modelo,nombrePerfil,correoPerfil,fechaPerfil,saludoLateral](){saludoLateral->setText("Bienvenido, "+(modelo->nombre=="Cliente de muestra"?QString("Usuario"):modelo->nombre));nombrePerfil->setText(modelo->nombre);correoPerfil->setText(modelo->correo);fechaPerfil->setText(modelo->nacimiento.toString("dd/MM/yyyy"));};actualizar();
     connect(editar,&QPushButton::clicked,this,[this,modelo,actualizar](){
         if(editarPerfil(this,modelo->nombre,modelo->correo,modelo->nacimiento,[modelo](const QString &,const QString &clave){if(!clave.isEmpty())modelo->clave=QCryptographicHash::hash(clave.toUtf8(),QCryptographicHash::Sha256);return true;}))actualizar();
     });

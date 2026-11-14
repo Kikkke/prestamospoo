@@ -4,7 +4,9 @@
 #include <QPainterPath>
 // Silueta vectorial circular basada en la referencia del usuario.
 class AvatarCliente : public QWidget {
+    QPixmap foto;
 public:
+    void setFoto(const QPixmap &imagen){foto=imagen;update();}
     explicit AvatarCliente(QWidget *parent=nullptr):QWidget(parent) {
         setFixedSize(88,88); setObjectName("topicIcon");
         setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -13,6 +15,12 @@ public:
 protected:
     void paintEvent(QPaintEvent *) override {
         QPainter p(this); p.setRenderHint(QPainter::Antialiasing);
+        p.setRenderHint(QPainter::SmoothPixmapTransform);
+        if(!foto.isNull()){
+            QRectF r=rect().adjusted(3,3,-3,-3);QPainterPath recorte;recorte.addEllipse(r);
+            p.setClipPath(recorte);p.drawPixmap(r.toRect(),foto,foto.rect());
+            p.setClipping(false);p.setPen(QPen(QColor("#ed916f"),2));p.setBrush(Qt::NoBrush);p.drawEllipse(r);return;
+        }
         p.scale(width()/100.0,height()/100.0);
         const QColor cobre("#ed916f");
         p.setPen(QPen(cobre,2.8)); p.setBrush(Qt::NoBrush);
