@@ -1,122 +1,111 @@
--- Propuesta para MySQL 8.0.16+ / 8.4. Ejecutar UNA VEZ en una base NUEVA.
--- No se ha ejecutado contra un servidor. No borra bases ni tablas.
--- Datos ilustrativos; contraseñas NULL: ninguna cuenta puede autenticar aún.
-CREATE DATABASE IF NOT EXISTS financionantimex CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- Esquema sencillo y datos de muestra.
+-- Las validaciones de negocio se implementarán en el backend.
+-- Conservar claves primarias y foráneas para relacionar las tablas.
+-- Fechas de carga de muestra: 15/11/2026. Contraseñas pendientes (NULL).
+-- Ejecutar en una base nueva; este script no se ha ejecutado contra MySQL.
+
+CREATE DATABASE financionantimex;
 USE financionantimex;
 CREATE TABLE usuario (
- id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
- nombre VARCHAR(120) NOT NULL,
- correo VARCHAR(254) NOT NULL UNIQUE,
- nacimiento DATE NOT NULL,
+ id INT PRIMARY KEY AUTO_INCREMENT,
+ nombre VARCHAR(120),
+ correo VARCHAR(254),
+ nacimiento DATE,
  password_hash VARCHAR(255) NULL,
  foto_ruta VARCHAR(512) NULL,
- creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ creado_en DATETIME,
  ultimo_acceso DATETIME NULL,
- es_muestra BOOLEAN NOT NULL DEFAULT FALSE
-) ENGINE=InnoDB;
+ es_muestra BOOLEAN
+);
 CREATE TABLE administrador (
- usuario_id BIGINT UNSIGNED PRIMARY KEY,
- folio CHAR(13) CHARACTER SET ascii COLLATE ascii_bin NOT NULL UNIQUE,
+ usuario_id INT PRIMARY KEY,
+ folio CHAR(13),
  eliminado_en DATETIME NULL,
- FOREIGN KEY(usuario_id) REFERENCES usuario(id) ON DELETE RESTRICT,
- CHECK(folio REGEXP '^[A-Z]{3}[0-9]{6}[A-Z]{2}[0-9]{2}$')
-) ENGINE=InnoDB;
+ FOREIGN KEY(usuario_id) REFERENCES usuario(id)
+);
 CREATE TABLE cliente (
- usuario_id BIGINT UNSIGNED PRIMARY KEY,
- habilitado BOOLEAN NOT NULL DEFAULT TRUE,
+ usuario_id INT PRIMARY KEY,
+ habilitado BOOLEAN,
  motivo_deshabilitacion TEXT NULL,
  deshabilitado_en DATETIME NULL,
- FOREIGN KEY(usuario_id) REFERENCES usuario(id) ON DELETE RESTRICT
-) ENGINE=InnoDB;
+ FOREIGN KEY(usuario_id) REFERENCES usuario(id)
+);
 CREATE TABLE simulacion (
- id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
- cliente_id BIGINT UNSIGNED NOT NULL,
- nombre VARCHAR(160) NOT NULL,
- monto DECIMAL(15,2) NOT NULL,
- tasa_anual DECIMAL(7,4) NOT NULL,
- meses SMALLINT UNSIGNED NOT NULL,
- moneda CHAR(3) NOT NULL DEFAULT 'MXN',
- frecuencia VARCHAR(16) NOT NULL DEFAULT 'MENSUAL',
- metodo VARCHAR(32) NOT NULL DEFAULT 'CUOTA_FIJA',
- version_calculo VARCHAR(32) NOT NULL DEFAULT 'demo_cpp_v1',
- cuota_regular DECIMAL(15,2) NOT NULL,
- intereses_totales DECIMAL(17,2) NOT NULL,
- total_pagar DECIMAL(17,2) NOT NULL,
- creada_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
- actualizada_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ id INT PRIMARY KEY AUTO_INCREMENT,
+ cliente_id INT,
+ nombre VARCHAR(160),
+ monto DECIMAL(15,2),
+ tasa_anual DECIMAL(7,4),
+ meses INT,
+ moneda CHAR(3),
+ frecuencia VARCHAR(16),
+ metodo VARCHAR(32),
+ version_calculo VARCHAR(32),
+ cuota_regular DECIMAL(15,2),
+ intereses_totales DECIMAL(17,2),
+ total_pagar DECIMAL(17,2),
+ creada_en DATETIME,
+ actualizada_en DATETIME,
  eliminada_en DATETIME NULL,
  origen_muestra VARCHAR(32) NULL,
- FOREIGN KEY(cliente_id) REFERENCES cliente(usuario_id) ON DELETE RESTRICT,
- CHECK(monto>0),CHECK(tasa_anual BETWEEN 0 AND 1000),CHECK(meses BETWEEN 1 AND 600),
- INDEX idx_historial(cliente_id,eliminada_en,creada_en)
-) ENGINE=InnoDB;
+ FOREIGN KEY(cliente_id) REFERENCES cliente(usuario_id)
+);
 CREATE TABLE cuota (
- simulacion_id BIGINT UNSIGNED NOT NULL,
- numero SMALLINT UNSIGNED NOT NULL,
- saldo_inicial DECIMAL(15,2) NOT NULL,
- pago DECIMAL(17,2) NOT NULL,
- interes DECIMAL(17,2) NOT NULL,
- abono_capital DECIMAL(15,2) NOT NULL,
- saldo_final DECIMAL(15,2) NOT NULL,
+ simulacion_id INT,
+ numero INT,
+ saldo_inicial DECIMAL(15,2),
+ pago DECIMAL(17,2),
+ interes DECIMAL(17,2),
+ abono_capital DECIMAL(15,2),
+ saldo_final DECIMAL(15,2),
  PRIMARY KEY(simulacion_id,numero),
- FOREIGN KEY(simulacion_id) REFERENCES simulacion(id) ON DELETE RESTRICT,
- CHECK(numero>0),CHECK(saldo_final>=0),
- CHECK(pago=interes+abono_capital),
- CHECK(saldo_final=saldo_inicial-abono_capital)
-) ENGINE=InnoDB;
+ FOREIGN KEY(simulacion_id) REFERENCES simulacion(id)
+);
 CREATE TABLE apelacion (
- id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
- cliente_id BIGINT UNSIGNED NOT NULL,
- motivo_deshabilitacion TEXT NOT NULL,
- mensaje TEXT NOT NULL,
- estado ENUM('PENDIENTE','APROBADA','RECHAZADA') NOT NULL DEFAULT 'PENDIENTE',
+ id INT PRIMARY KEY AUTO_INCREMENT,
+ cliente_id INT,
+ motivo_deshabilitacion TEXT,
+ mensaje TEXT,
+ estado VARCHAR(20),
  respuesta TEXT NULL,
- creada_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ creada_en DATETIME,
  resuelta_en DATETIME NULL,
- resuelta_por BIGINT UNSIGNED NULL,
- pendiente_cliente BIGINT UNSIGNED GENERATED ALWAYS AS
-   (CASE WHEN estado='PENDIENTE' THEN cliente_id ELSE NULL END) STORED,
- UNIQUE KEY una_pendiente(pendiente_cliente),
- FOREIGN KEY(cliente_id) REFERENCES cliente(usuario_id) ON DELETE RESTRICT,
- FOREIGN KEY(resuelta_por) REFERENCES administrador(usuario_id) ON DELETE RESTRICT,
- CHECK((estado='PENDIENTE' AND resuelta_en IS NULL AND resuelta_por IS NULL)
- OR (estado<>'PENDIENTE' AND resuelta_en IS NOT NULL AND resuelta_por IS NOT NULL AND respuesta IS NOT NULL))
-) ENGINE=InnoDB;
+ resuelta_por INT NULL,
+ FOREIGN KEY(cliente_id) REFERENCES cliente(usuario_id),
+ FOREIGN KEY(resuelta_por) REFERENCES administrador(usuario_id)
+);
 CREATE TABLE actividad_administrativa (
- id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
- administrador_id BIGINT UNSIGNED NOT NULL,
- autorizador_id BIGINT UNSIGNED NULL,
- accion VARCHAR(64) NOT NULL,
- entidad VARCHAR(32) NOT NULL,
- entidad_id BIGINT UNSIGNED NULL,
- descripcion TEXT NOT NULL,
- antes JSON NULL,
- despues JSON NULL,
- creada_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
- FOREIGN KEY(administrador_id) REFERENCES administrador(usuario_id) ON DELETE RESTRICT,
- FOREIGN KEY(autorizador_id) REFERENCES administrador(usuario_id) ON DELETE RESTRICT,
- INDEX idx_actividad(creada_en,administrador_id,accion)
-) ENGINE=InnoDB;
--- Catálogo separado: nunca se confunde con una auditoría auténtica.
+ id INT PRIMARY KEY AUTO_INCREMENT,
+ administrador_id INT,
+ autorizador_id INT NULL,
+ accion VARCHAR(64),
+ entidad VARCHAR(32),
+ entidad_id INT NULL,
+ descripcion TEXT,
+ antes TEXT NULL,
+ despues TEXT NULL,
+ creada_en DATETIME,
+ FOREIGN KEY(administrador_id) REFERENCES administrador(usuario_id),
+ FOREIGN KEY(autorizador_id) REFERENCES administrador(usuario_id)
+);
 CREATE TABLE actividad_demo (
- id INT PRIMARY KEY, responsable VARCHAR(120) NOT NULL, accion VARCHAR(64) NOT NULL,
- descripcion TEXT NOT NULL, fecha DATETIME NOT NULL
-) ENGINE=InnoDB;
+ id INT PRIMARY KEY, responsable VARCHAR(120), accion VARCHAR(64),
+ descripcion TEXT, fecha DATETIME
+);
 
-START TRANSACTION;
-INSERT INTO usuario(id,nombre,correo,nacimiento,ultimo_acceso,es_muestra) VALUES
-(1,'Enrique','lopez.garfias.enrique@gmail.com','2007-03-31',NULL,TRUE),
-(2,'Pedro','pescador.velazquez.pedro@gmail.com','2007-05-09',NULL,TRUE),
-(3,'Uziel','uzielpime@gmail.com','2007-12-21',NULL,TRUE),
-(4,'Alexander','alexxaanderjimenez@gmail.com','2005-09-22',NULL,TRUE),
-(5,'Jared','tcrid67@gmail.com','2007-09-27',NULL,TRUE),
-(6,'Ana López','cliente1@demo.mx','1995-03-10','2026-11-15 12:00:00',TRUE),
-(7,'Luis Pérez','cliente2@demo.mx','1996-04-11','2026-09-15 12:00:00',TRUE),
-(8,'María Torres','cliente3@demo.mx','1997-05-12','2026-07-15 12:00:00',TRUE),
-(9,'Carlos Ruiz','cliente4@demo.mx','1998-06-13','2026-05-15 12:00:00',TRUE),
-(10,'Sofía García','cliente5@demo.mx','1999-07-14','2026-03-15 12:00:00',TRUE),
-(11,'Diego Hernández','cliente6@demo.mx','2000-08-15','2026-01-15 12:00:00',TRUE),
-(12,'Cliente de muestra','cliente@demo.mx','2000-01-01',NULL,TRUE);
+INSERT INTO usuario(id,nombre,correo,nacimiento,ultimo_acceso,es_muestra,creado_en) VALUES
+(1,'Enrique','lopez.garfias.enrique@gmail.com','2007-03-31',NULL,TRUE,'2026-11-15 12:00:00'),
+(2,'Pedro','pescador.velazquez.pedro@gmail.com','2007-05-09',NULL,TRUE,'2026-11-15 12:00:00'),
+(3,'Uziel','uzielpime@gmail.com','2007-12-21',NULL,TRUE,'2026-11-15 12:00:00'),
+(4,'Alexander','alexxaanderjimenez@gmail.com','2005-09-22',NULL,TRUE,'2026-11-15 12:00:00'),
+(5,'Jared','tcrid67@gmail.com','2007-09-27',NULL,TRUE,'2026-11-15 12:00:00'),
+(6,'Ana López','cliente1@demo.mx','1995-03-10','2026-11-15 12:00:00',TRUE,'2026-11-15 12:00:00'),
+(7,'Luis Pérez','cliente2@demo.mx','1996-04-11','2026-09-15 12:00:00',TRUE,'2026-11-15 12:00:00'),
+(8,'María Torres','cliente3@demo.mx','1997-05-12','2026-07-15 12:00:00',TRUE,'2026-11-15 12:00:00'),
+(9,'Carlos Ruiz','cliente4@demo.mx','1998-06-13','2026-05-15 12:00:00',TRUE,'2026-11-15 12:00:00'),
+(10,'Sofía García','cliente5@demo.mx','1999-07-14','2026-03-15 12:00:00',TRUE,'2026-11-15 12:00:00'),
+(11,'Diego Hernández','cliente6@demo.mx','2000-08-15','2026-01-15 12:00:00',TRUE,'2026-11-15 12:00:00'),
+(12,'Cliente de muestra','cliente@demo.mx','2000-01-01',NULL,TRUE,'2026-11-15 12:00:00');
 INSERT INTO administrador(usuario_id,folio) VALUES
 (1,'ENR310307GB34'),
 (2,'PED090507XJ87'),
@@ -131,12 +120,12 @@ INSERT INTO cliente(usuario_id,habilitado,motivo_deshabilitacion,deshabilitado_e
 (10,TRUE,NULL,NULL),
 (11,TRUE,NULL,NULL),
 (12,TRUE,NULL,NULL);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (1,6,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (1,6,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (1,1,12000.00,4000.00,0.00,4000.00,8000.00),
 (1,2,8000.00,4000.00,0.00,4000.00,4000.00),
 (1,3,4000.00,4000.00,0.00,4000.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (2,6,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (2,6,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (2,1,24000.00,2132.37,240.00,1892.37,22107.63),
 (2,2,22107.63,2132.37,221.08,1911.29,20196.34),
@@ -150,12 +139,12 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (2,10,6271.27,2132.37,62.71,2069.66,4201.61),
 (2,11,4201.61,2132.37,42.02,2090.35,2111.26),
 (2,12,2111.26,2132.37,21.11,2111.26,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (3,7,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (3,7,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (3,1,12000.00,4000.00,0.00,4000.00,8000.00),
 (3,2,8000.00,4000.00,0.00,4000.00,4000.00),
 (3,3,4000.00,4000.00,0.00,4000.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (4,7,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (4,7,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (4,1,24000.00,2132.37,240.00,1892.37,22107.63),
 (4,2,22107.63,2132.37,221.08,1911.29,20196.34),
@@ -169,12 +158,12 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (4,10,6271.27,2132.37,62.71,2069.66,4201.61),
 (4,11,4201.61,2132.37,42.02,2090.35,2111.26),
 (4,12,2111.26,2132.37,21.11,2111.26,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (5,8,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (5,8,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (5,1,12000.00,4000.00,0.00,4000.00,8000.00),
 (5,2,8000.00,4000.00,0.00,4000.00,4000.00),
 (5,3,4000.00,4000.00,0.00,4000.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (6,8,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (6,8,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (6,1,24000.00,2132.37,240.00,1892.37,22107.63),
 (6,2,22107.63,2132.37,221.08,1911.29,20196.34),
@@ -188,12 +177,12 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (6,10,6271.27,2132.37,62.71,2069.66,4201.61),
 (6,11,4201.61,2132.37,42.02,2090.35,2111.26),
 (6,12,2111.26,2132.37,21.11,2111.26,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (7,9,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (7,9,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (7,1,12000.00,4000.00,0.00,4000.00,8000.00),
 (7,2,8000.00,4000.00,0.00,4000.00,4000.00),
 (7,3,4000.00,4000.00,0.00,4000.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (8,9,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (8,9,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (8,1,24000.00,2132.37,240.00,1892.37,22107.63),
 (8,2,22107.63,2132.37,221.08,1911.29,20196.34),
@@ -207,12 +196,12 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (8,10,6271.27,2132.37,62.71,2069.66,4201.61),
 (8,11,4201.61,2132.37,42.02,2090.35,2111.26),
 (8,12,2111.26,2132.37,21.11,2111.26,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (9,10,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (9,10,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (9,1,12000.00,4000.00,0.00,4000.00,8000.00),
 (9,2,8000.00,4000.00,0.00,4000.00,4000.00),
 (9,3,4000.00,4000.00,0.00,4000.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (10,10,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (10,10,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (10,1,24000.00,2132.37,240.00,1892.37,22107.63),
 (10,2,22107.63,2132.37,221.08,1911.29,20196.34),
@@ -226,12 +215,12 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (10,10,6271.27,2132.37,62.71,2069.66,4201.61),
 (10,11,4201.61,2132.37,42.02,2090.35,2111.26),
 (10,12,2111.26,2132.37,21.11,2111.26,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (11,11,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (11,11,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (11,1,12000.00,4000.00,0.00,4000.00,8000.00),
 (11,2,8000.00,4000.00,0.00,4000.00,4000.00),
 (11,3,4000.00,4000.00,0.00,4000.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (12,11,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (12,11,'Estudios',24000.00,12.0000,12,2132.37,1588.44,25588.44,'panel_clientes','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (12,1,24000.00,2132.37,240.00,1892.37,22107.63),
 (12,2,22107.63,2132.37,221.08,1911.29,20196.34),
@@ -245,12 +234,12 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (12,10,6271.27,2132.37,62.71,2069.66,4201.61),
 (12,11,4201.61,2132.37,42.02,2090.35,2111.26),
 (12,12,2111.26,2132.37,21.11,2111.26,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (13,12,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (13,12,'Computadora',12000.00,0.0000,3,4000.00,0.00,12000.00,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (13,1,12000.00,4000.00,0.00,4000.00,8000.00),
 (13,2,8000.00,4000.00,0.00,4000.00,4000.00),
 (13,3,4000.00,4000.00,0.00,4000.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (14,12,'Computadora a 6 meses',12000.00,0.0000,6,2000.00,0.00,12000.00,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (14,12,'Computadora a 6 meses',12000.00,0.0000,6,2000.00,0.00,12000.00,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (14,1,12000.00,2000.00,0.00,2000.00,10000.00),
 (14,2,10000.00,2000.00,0.00,2000.00,8000.00),
@@ -258,7 +247,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (14,4,6000.00,2000.00,0.00,2000.00,4000.00),
 (14,5,4000.00,2000.00,0.00,2000.00,2000.00),
 (14,6,2000.00,2000.00,0.00,2000.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (15,12,'Automóvil',180000.00,14.5000,48,4964.03,58273.49,238273.49,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (15,12,'Automóvil',180000.00,14.5000,48,4964.03,58273.49,238273.49,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (15,1,180000.00,4964.03,2175.00,2789.03,177210.97),
 (15,2,177210.97,4964.03,2141.30,2822.73,174388.24),
@@ -308,7 +297,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (15,46,14539.37,4964.03,175.68,4788.35,9751.02),
 (15,47,9751.02,4964.03,117.82,4846.21,4904.81),
 (15,48,4904.81,4964.08,59.27,4904.81,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (16,12,'Estudios universitarios',45000.00,10.0000,24,2076.52,4836.50,49836.50,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (16,12,'Estudios universitarios',45000.00,10.0000,24,2076.52,4836.50,49836.50,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (16,1,45000.00,2076.52,375.00,1701.52,43298.48),
 (16,2,43298.48,2076.52,360.82,1715.70,41582.78),
@@ -334,7 +323,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (16,22,6127.18,2076.52,51.06,2025.46,4101.72),
 (16,23,4101.72,2076.52,34.18,2042.34,2059.38),
 (16,24,2059.38,2076.54,17.16,2059.38,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (17,12,'Remodelación de cocina',65000.00,16.0000,36,2285.21,17267.42,82267.42,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (17,12,'Remodelación de cocina',65000.00,16.0000,36,2285.21,17267.42,82267.42,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (17,1,65000.00,2285.21,866.67,1418.54,63581.46),
 (17,2,63581.46,2285.21,847.75,1437.46,62144.00),
@@ -372,7 +361,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (17,34,6676.66,2285.21,89.02,2196.19,4480.47),
 (17,35,4480.47,2285.21,59.74,2225.47,2255.00),
 (17,36,2255.00,2285.07,30.07,2255.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (18,12,'Motocicleta',38000.00,18.0000,24,1897.12,7530.73,45530.73,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (18,12,'Motocicleta',38000.00,18.0000,24,1897.12,7530.73,45530.73,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (18,1,38000.00,1897.12,570.00,1327.12,36672.88),
 (18,2,36672.88,1897.12,550.09,1347.03,35325.85),
@@ -398,7 +387,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (18,22,5524.65,1897.12,82.87,1814.25,3710.40),
 (18,23,3710.40,1897.12,55.66,1841.46,1868.94),
 (18,24,1868.94,1896.97,28.03,1868.94,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (19,12,'Viaje familiar',25000.00,12.0000,12,2221.22,1654.65,26654.65,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (19,12,'Viaje familiar',25000.00,12.0000,12,2221.22,1654.65,26654.65,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (19,1,25000.00,2221.22,250.00,1971.22,23028.78),
 (19,2,23028.78,2221.22,230.29,1990.93,21037.85),
@@ -412,7 +401,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (19,10,6532.58,2221.22,65.33,2155.89,4376.69),
 (19,11,4376.69,2221.22,43.77,2177.45,2199.24),
 (19,12,2199.24,2221.23,21.99,2199.24,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (20,12,'Equipo de fotografía',32000.00,15.0000,18,1996.31,3933.65,35933.65,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (20,12,'Equipo de fotografía',32000.00,15.0000,18,1996.31,3933.65,35933.65,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (20,1,32000.00,1996.31,400.00,1596.31,30403.69),
 (20,2,30403.69,1996.31,380.05,1616.26,28787.43),
@@ -432,7 +421,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (20,16,5842.33,1996.31,73.03,1923.28,3919.05),
 (20,17,3919.05,1996.31,48.99,1947.32,1971.73),
 (20,18,1971.73,1996.38,24.65,1971.73,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (21,12,'Muebles para el hogar',28000.00,9.5000,12,2455.14,1461.67,29461.67,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (21,12,'Muebles para el hogar',28000.00,9.5000,12,2455.14,1461.67,29461.67,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (21,1,28000.00,2455.14,221.67,2233.47,25766.53),
 (21,2,25766.53,2455.14,203.99,2251.15,23515.38),
@@ -446,7 +435,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (21,10,7250.31,2455.14,57.40,2397.74,4852.57),
 (21,11,4852.57,2455.14,38.42,2416.72,2435.85),
 (21,12,2435.85,2455.13,19.28,2435.85,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (22,12,'Paneles solares',85000.00,11.0000,36,2782.79,15180.50,100180.50,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (22,12,'Paneles solares',85000.00,11.0000,36,2782.79,15180.50,100180.50,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (22,1,85000.00,2782.79,779.17,2003.62,82996.38),
 (22,2,82996.38,2782.79,760.80,2021.99,80974.39),
@@ -484,7 +473,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (22,34,8197.67,2782.79,75.15,2707.64,5490.03),
 (22,35,5490.03,2782.79,50.33,2732.46,2757.57),
 (22,36,2757.57,2782.85,25.28,2757.57,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (23,12,'Herramientas de trabajo',18500.00,13.0000,18,1136.78,1962.05,20462.05,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (23,12,'Herramientas de trabajo',18500.00,13.0000,18,1136.78,1962.05,20462.05,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (23,1,18500.00,1136.78,200.42,936.36,17563.64),
 (23,2,17563.64,1136.78,190.27,946.51,16617.13),
@@ -504,7 +493,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (23,16,3337.77,1136.78,36.16,1100.62,2237.15),
 (23,17,2237.15,1136.78,24.24,1112.54,1124.61),
 (23,18,1124.61,1136.79,12.18,1124.61,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (24,12,'Curso de idiomas',15000.00,8.0000,12,1304.83,657.92,15657.92,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (24,12,'Curso de idiomas',15000.00,8.0000,12,1304.83,657.92,15657.92,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (24,1,15000.00,1304.83,100.00,1204.83,13795.17),
 (24,2,13795.17,1304.83,91.97,1212.86,12582.31),
@@ -518,7 +507,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (24,10,3862.83,1304.83,25.75,1279.08,2583.75),
 (24,11,2583.75,1304.83,17.23,1287.60,1296.15),
 (24,12,1296.15,1304.79,8.64,1296.15,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (25,12,'Consultorio dental',120000.00,17.0000,48,3462.61,46204.98,166204.98,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (25,12,'Consultorio dental',120000.00,17.0000,48,3462.61,46204.98,166204.98,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (25,1,120000.00,3462.61,1700.00,1762.61,118237.39),
 (25,2,118237.39,3462.61,1675.03,1787.58,116449.81),
@@ -568,7 +557,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (25,46,10100.03,3462.61,143.08,3319.53,6780.50),
 (25,47,6780.50,3462.61,96.06,3366.55,3413.95),
 (25,48,3413.95,3462.31,48.36,3413.95,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (26,12,'Negocio de repostería',55000.00,14.0000,24,2640.71,8376.99,63376.99,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (26,12,'Negocio de repostería',55000.00,14.0000,24,2640.71,8376.99,63376.99,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (26,1,55000.00,2640.71,641.67,1999.04,53000.96),
 (26,2,53000.96,2640.71,618.34,2022.37,50978.59),
@@ -594,7 +583,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (26,22,7740.77,2640.71,90.31,2550.40,5190.37),
 (26,23,5190.37,2640.71,60.55,2580.16,2610.21),
 (26,24,2610.21,2640.66,30.45,2610.21,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (27,12,'Reparación de automóvil',22000.00,19.0000,12,2027.44,2329.35,24329.35,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (27,12,'Reparación de automóvil',22000.00,19.0000,12,2027.44,2329.35,24329.35,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (27,1,22000.00,2027.44,348.33,1679.11,20320.89),
 (27,2,20320.89,2027.44,321.75,1705.69,18615.20),
@@ -608,7 +597,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (27,10,5894.75,2027.44,93.33,1934.11,3960.64),
 (27,11,3960.64,2027.44,62.71,1964.73,1995.91),
 (27,12,1995.91,2027.51,31.60,1995.91,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (28,12,'Equipo de sonido',16500.00,12.5000,18,1010.04,1680.73,18180.73,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (28,12,'Equipo de sonido',16500.00,12.5000,18,1010.04,1680.73,18180.73,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (28,1,16500.00,1010.04,171.88,838.16,15661.84),
 (28,2,15661.84,1010.04,163.14,846.90,14814.94),
@@ -628,7 +617,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (28,16,2968.08,1010.04,30.92,979.12,1988.96),
 (28,17,1988.96,1010.04,20.72,989.32,999.64),
 (28,18,999.64,1010.05,10.41,999.64,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (29,12,'Bicicleta eléctrica',27000.00,10.5000,24,1252.15,3051.67,30051.67,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (29,12,'Bicicleta eléctrica',27000.00,10.5000,24,1252.15,3051.67,30051.67,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (29,1,27000.00,1252.15,236.25,1015.90,25984.10),
 (29,2,25984.10,1252.15,227.36,1024.79,24959.31),
@@ -654,7 +643,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (29,22,3691.73,1252.15,32.30,1219.85,2471.88),
 (29,23,2471.88,1252.15,21.63,1230.52,1241.36),
 (29,24,1241.36,1252.22,10.86,1241.36,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (30,12,'Gastos médicos',40000.00,9.0000,24,1827.39,3857.36,43857.36,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (30,12,'Gastos médicos',40000.00,9.0000,24,1827.39,3857.36,43857.36,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (30,1,40000.00,1827.39,300.00,1527.39,38472.61),
 (30,2,38472.61,1827.39,288.54,1538.85,36933.76),
@@ -680,7 +669,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (30,22,5400.95,1827.39,40.51,1786.88,3614.07),
 (30,23,3614.07,1827.39,27.11,1800.28,1813.79),
 (30,24,1813.79,1827.39,13.60,1813.79,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (31,12,'Teléfono móvil',14000.00,0.0000,12,1166.67,0.00,14000.00,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (31,12,'Teléfono móvil',14000.00,0.0000,12,1166.67,0.00,14000.00,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (31,1,14000.00,1166.67,0.00,1166.67,12833.33),
 (31,2,12833.33,1166.67,0.00,1166.67,11666.66),
@@ -694,7 +683,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (31,10,3499.97,1166.67,0.00,1166.67,2333.30),
 (31,11,2333.30,1166.67,0.00,1166.67,1166.63),
 (31,12,1166.63,1166.63,0.00,1166.63,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (32,12,'Ampliación de vivienda',150000.00,15.5000,60,3607.98,66478.68,216478.68,'historial');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (32,12,'Ampliación de vivienda',150000.00,15.5000,60,3607.98,66478.68,216478.68,'historial','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (32,1,150000.00,3607.98,1937.50,1670.48,148329.52),
 (32,2,148329.52,3607.98,1915.92,1692.06,146637.46),
@@ -756,7 +745,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (32,58,10550.11,3607.98,136.27,3471.71,7078.40),
 (32,59,7078.40,3607.98,91.43,3516.55,3561.85),
 (32,60,3561.85,3607.86,46.01,3561.85,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (33,12,'Computadora a 12 meses',12000.00,12.0000,12,1066.19,794.23,12794.23,'comparador');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (33,12,'Computadora a 12 meses',12000.00,12.0000,12,1066.19,794.23,12794.23,'comparador','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (33,1,12000.00,1066.19,120.00,946.19,11053.81),
 (33,2,11053.81,1066.19,110.54,955.65,10098.16),
@@ -770,7 +759,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (33,10,3135.59,1066.19,31.36,1034.83,2100.76),
 (33,11,2100.76,1066.19,21.01,1045.18,1055.58),
 (33,12,1055.58,1066.14,10.56,1055.58,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (34,12,'Muebles a 12 meses',24000.00,0.0000,12,2000.00,0.00,24000.00,'comparador');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (34,12,'Muebles a 12 meses',24000.00,0.0000,12,2000.00,0.00,24000.00,'comparador','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (34,1,24000.00,2000.00,0.00,2000.00,22000.00),
 (34,2,22000.00,2000.00,0.00,2000.00,20000.00),
@@ -784,7 +773,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (34,10,6000.00,2000.00,0.00,2000.00,4000.00),
 (34,11,4000.00,2000.00,0.00,2000.00,2000.00),
 (34,12,2000.00,2000.00,0.00,2000.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (35,12,'Muebles a 24 meses',24000.00,0.0000,24,1000.00,0.00,24000.00,'comparador');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (35,12,'Muebles a 24 meses',24000.00,0.0000,24,1000.00,0.00,24000.00,'comparador','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (35,1,24000.00,1000.00,0.00,1000.00,23000.00),
 (35,2,23000.00,1000.00,0.00,1000.00,22000.00),
@@ -810,7 +799,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (35,22,3000.00,1000.00,0.00,1000.00,2000.00),
 (35,23,2000.00,1000.00,0.00,1000.00,1000.00),
 (35,24,1000.00,1000.00,0.00,1000.00,0.00);
-INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra) VALUES (36,12,'Curso de idiomas (10 meses sin interés)',15000.00,0.0000,10,1500.00,0.00,15000.00,'comparador');
+INSERT INTO simulacion(id,cliente_id,nombre,monto,tasa_anual,meses,cuota_regular,intereses_totales,total_pagar,origen_muestra,moneda,frecuencia,metodo,version_calculo,creada_en,actualizada_en) VALUES (36,12,'Curso de idiomas (10 meses sin interés)',15000.00,0.0000,10,1500.00,0.00,15000.00,'comparador','MXN','MENSUAL','CUOTA_FIJA','demo_cpp_v1','2026-11-15 12:00:00','2026-11-15 12:00:00');
 INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,saldo_final) VALUES
 (36,1,15000.00,1500.00,0.00,1500.00,13500.00),
 (36,2,13500.00,1500.00,0.00,1500.00,12000.00),
@@ -822,7 +811,7 @@ INSERT INTO cuota(simulacion_id,numero,saldo_inicial,pago,interes,abono_capital,
 (36,8,4500.00,1500.00,0.00,1500.00,3000.00),
 (36,9,3000.00,1500.00,0.00,1500.00,1500.00),
 (36,10,1500.00,1500.00,0.00,1500.00,0.00);
-INSERT INTO apelacion(cliente_id,motivo_deshabilitacion,mensaje,creada_en) VALUES (6,'Inactividad','Deseo retomar mis simulaciones y solicito reactivar mi cuenta.','2026-11-15 12:00:00');
+INSERT INTO apelacion(cliente_id,motivo_deshabilitacion,mensaje,creada_en,estado) VALUES (6,'Inactividad','Deseo retomar mis simulaciones y solicito reactivar mi cuenta.','2026-11-15 12:00:00','PENDIENTE');
 INSERT INTO actividad_demo(id,responsable,accion,descripcion,fecha) VALUES
 (1,'Enrique','Administrador creado','Ejemplo ilustrativo; no representa una operación real.','2026-11-15 18:35:00'),
 (2,'Pedro','Administrador editado','Ejemplo ilustrativo; no representa una operación real.','2026-11-15 17:35:00'),
@@ -848,14 +837,3 @@ INSERT INTO actividad_demo(id,responsable,accion,descripcion,fecha) VALUES
 (22,'Pedro','Folio propio consultado','Ejemplo ilustrativo; no representa una operación real.','2026-11-08 18:35:00'),
 (23,'Uziel','Administrador creado','Ejemplo ilustrativo; no representa una operación real.','2026-11-08 17:35:00'),
 (24,'Alexander','Administrador editado','Ejemplo ilustrativo; no representa una operación real.','2026-11-08 16:35:00');
-COMMIT;
-
--- Verificación: 12 usuarios, 5 administradores, 7 clientes, 36 simulaciones.
-SELECT COUNT(*) usuarios FROM usuario;
-SELECT COUNT(*) simulaciones FROM simulacion;
--- Esta consulta debe devolver CERO filas:
-SELECT s.id FROM simulacion s JOIN cuota c ON c.simulacion_id=s.id
-GROUP BY s.id,s.meses,s.monto,s.intereses_totales,s.total_pagar
-HAVING COUNT(*)<>s.meses OR SUM(c.abono_capital)<>s.monto
-OR SUM(c.interes)<>s.intereses_totales OR SUM(c.pago)<>s.total_pagar
-OR MAX(CASE WHEN c.numero=s.meses THEN c.saldo_final END)<>0;
