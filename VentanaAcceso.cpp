@@ -72,7 +72,7 @@ VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
     pantallas->addWidget(admin);
     admin->salir = [pantallas, acceso]() { pantallas->setCurrentWidget(acceso); };
     connect(login, &PantallaLogin::administradorSolicitado, this, [admin, pantallas]() {
-        if (admin->confirmar("Acceso administrativo de demostración")) pantallas->setCurrentWidget(admin);
+        if (admin->confirmar("Acceso administrativo de demostración",true)) pantallas->setCurrentWidget(admin);
     });
     connect(login, &PantallaLogin::clienteDeshabilitadoSolicitado, this, [admin, pantallas, panel]() {
         if (admin->clientes[0].habilitado) pantallas->setCurrentWidget(panel);

@@ -5,6 +5,8 @@
 #include "CampoNacimiento.h"
 #include "EditarPerfil.h"
 #include "ActividadAdministrativa.h"
+#include "FiltrosClientes.h"
+#include <algorithm>
 #include <QCryptographicHash>
 #include <QDialog>
 #include <QPushButton>
@@ -62,11 +64,11 @@ public:
             connect(b,&QPushButton::clicked,this,[this,s](){ if(pagina!=s) { pagina=s; render(); } });
         }
         menu->addStretch(); menu->addWidget(label("PROTOTIPO\nCambios temporales","caption"));
-        connect(button("Cerrar sesión",menu),&QPushButton::clicked,this,[this](){if(salir)salir();});
+        connect(button("Cerrar sesión",menu),&QPushButton::clicked,this,[this](){folioSesion.clear();if(salir)salir();});
         raiz->addWidget(lateral);
         scroll=new QScrollArea; scroll->setWidgetResizable(true); raiz->addWidget(scroll,1); render();
     }
-    bool confirmar(const QString &accion) {
+    bool confirmar(const QString &accion, bool acceso=false) {
         QDialog d(this); d.setWindowTitle("Confirmación administrativa"); d.setMinimumWidth(430);
         auto *l=new QVBoxLayout(&d); l->addWidget(label(accion,"section"));
         l->addWidget(label("Para continuar, ingresa tu folio de administrador.","muted"));
@@ -74,8 +76,17 @@ public:
         auto *error=label("","passwordHint"); l->addWidget(error);
         auto *botones=new QDialogButtonBox; auto *ok=botones->addButton("Confirmar",QDialogButtonBox::AcceptRole); botones->addButton("Cancelar",QDialogButtonBox::RejectRole); l->addWidget(botones);
         connect(botones,&QDialogButtonBox::rejected,&d,&QDialog::reject);
-        connect(ok,&QPushButton::clicked,&d,[&](){if(campo->text().trimmed()==admins.first().folio)d.accept();else error->setText("Folio incorrecto.");});
-        return d.exec()==QDialog::Accepted;
+        connect(ok,&QPushButton::clicked,&d,[&](){
+            const QString codigo=campo->text().trimmed().toUpper();
+            if(acceso){
+                for(const auto &a:admins)if(a.folio==codigo){folioSesion=a.folio;d.accept();return;}
+                error->setText("No existe un administrador con ese folio.");
+            }else if(!folioSesion.isEmpty()&&codigo==folioSesion)d.accept();
+            else error->setText("Ingresa el folio del administrador que tiene la sesión activa.");
+        });
+        const bool aceptado=d.exec()==QDialog::Accepted;
+        if(aceptado&&acceso)render();
+        return aceptado;
     }
     void accesoCliente() {
         if(clientes[0].habilitado) { QMessageBox::information(this,"Cuenta reactivada","Tu apelación fue aprobada. Tu cuenta vuelve a estar habilitada."); return; }
@@ -94,6 +105,9 @@ public:
         connect(button("Volver al acceso",l),&QPushButton::clicked,&d,&QDialog::reject); d.exec();
     }
 private:
+    QString folioSesion="ENR310307GB34";
+    bool esSesion(int i) const {return i>=0&&i<admins.size()&&admins[i].folio==folioSesion;}
+    QString nombreSesion() const {for(const auto &a:admins)if(a.folio==folioSesion)return a.nombre;return {};}
     AvatarCliente *avatarLateral;QLabel *saludoLateral;
     QScrollArea *scroll; QString pagina="Clientes";
     static QLabel *label(const QString &s,const char *tipo="") {auto *l=new QLabel(s);l->setTextFormat(Qt::PlainText);l->setWordWrap(true);l->setObjectName(tipo);return l;}
@@ -101,15 +115,16 @@ private:
     static QVBoxLayout *card(QBoxLayout *l) {auto *f=new QFrame;f->setObjectName("card");auto *c=new QVBoxLayout(f);c->setContentsMargins(20,16,20,16);c->setSpacing(12);l->addWidget(f);return c;}
     QString estado(int i) const {if(!clientes[i].habilitado)return "Deshabilitada";return clientes[i].ultimo>=QDate::currentDate().addMonths(-6)?"Activo":"Inactivo";}
     void render() {
-        avatarLateral->setFoto(admins.first().foto);saludoLateral->setText("Bienvenido, "+admins.first().nombre);
+        for(const auto &a:admins)if(a.folio==folioSesion){avatarLateral->setFoto(a.foto);saludoLateral->setText("Bienvenido, "+a.nombre);break;}
         auto *viejo=scroll->takeWidget(); if(viejo)viejo->deleteLater();
         auto *f=new FondoAcceso; auto *l=new QVBoxLayout(f);l->setContentsMargins(24,24,24,24);l->setSpacing(16);scroll->setWidget(f);
         l->addWidget(label("ADMINISTRACIÓN / "+pagina,"eyebrow"));l->addWidget(label(pagina,"title"));
         l->addWidget(label("Datos de demostración · No se guardan al cerrar la aplicación","caption"));
         if(pagina=="Clientes") {
             l->addWidget(label("Directorio de clientes · Consulta sus cuentas y simulaciones", "muted"));
-            auto *barra=new QHBoxLayout;auto *buscar=new QLineEdit;buscar->setPlaceholderText("Buscar cliente por nombre o correo…");
-            auto *filtro=new QComboBox;filtro->addItems({"Todos","Activo","Inactivo","Deshabilitada"});barra->addWidget(buscar,1);barra->addWidget(filtro);l->addLayout(barra);
+            auto *buscar=new QLineEdit;buscar->setPlaceholderText("Buscar cliente por nombre o correo…");buscar->setClearButtonEnabled(true);l->addWidget(buscar);
+            auto *controles=new FiltrosClientes;l->addWidget(controles);
+            auto *filtro=controles->estado;auto *orden=controles->orden;auto *simulaciones=controles->simulaciones;
             auto *contador=label("","caption");l->addWidget(contador);
             auto *rejilla=new QGridLayout;rejilla->setSpacing(16);l->addLayout(rejilla);QList<QFrame*> tarjetas;
             for(int i=0;i<clientes.size();++i){
@@ -124,13 +139,39 @@ private:
                 rejilla->addWidget(frame,i/2,i%2);tarjetas.append(frame);
             }
             auto *vacio=label("No hay clientes que coincidan con estos filtros.","muted");l->addWidget(vacio);
-            auto filtrar=[this,buscar,filtro,tarjetas,rejilla,contador,vacio](){
-                int pos=0;
-                for(auto *tarjeta:tarjetas)rejilla->removeWidget(tarjeta);
-                for(int i=0;i<tarjetas.size();++i){bool visible=(clientes[i].nombre+" "+clientes[i].correo).contains(buscar->text().trimmed(),Qt::CaseInsensitive)&&(filtro->currentIndex()==0||estado(i)==filtro->currentText());tarjetas[i]->setVisible(visible);if(visible){rejilla->addWidget(tarjetas[i],pos/2,pos%2);++pos;}}
-                contador->setText(QString("Mostrando %1 de %2 clientes").arg(pos).arg(clientes.size()));vacio->setVisible(pos==0);
+            auto *limpiarVacio=new QPushButton("Limpiar filtros");l->addWidget(limpiarVacio,0,Qt::AlignLeft);
+            auto normalizar=[](QString valor){
+                QString resultado;
+                for(QChar c:valor.normalized(QString::NormalizationForm_D).toCaseFolded())
+                    if(c.category()!=QChar::Mark_NonSpacing&&c.category()!=QChar::Mark_SpacingCombining)resultado+=c;
+                return resultado.trimmed();
             };
-            connect(buscar,&QLineEdit::textChanged,f,filtrar);connect(filtro,&QComboBox::currentTextChanged,f,filtrar);filtrar();
+            auto filtrar=[this,buscar,filtro,orden,simulaciones,tarjetas,rejilla,contador,vacio,limpiarVacio,normalizar](){
+                QList<int> indices;
+                for(int i=0;i<tarjetas.size();++i){
+                    rejilla->removeWidget(tarjetas[i]);
+                    bool coincide=normalizar(clientes[i].nombre+" "+clientes[i].correo).contains(normalizar(buscar->text()))
+                        &&(filtro->currentIndex()==0||estado(i)==filtro->currentText())
+                        &&(simulaciones->currentIndex()==0||(simulaciones->currentIndex()==1?!clientes[i].sims.isEmpty():clientes[i].sims.isEmpty()));
+                    tarjetas[i]->setVisible(coincide);if(coincide)indices.append(i);
+                }
+                std::stable_sort(indices.begin(),indices.end(),[&](int a,int b){
+                    const auto &x=clientes[a];const auto &y=clientes[b];int opcion=orden->currentIndex();
+                    if(opcion==2&&x.ultimo!=y.ultimo)return x.ultimo>y.ultimo;
+                    if(opcion==3&&x.ultimo!=y.ultimo)return x.ultimo<y.ultimo;
+                    if(opcion==4&&x.sims.size()!=y.sims.size())return x.sims.size()>y.sims.size();
+                    if(opcion==5&&x.sims.size()!=y.sims.size())return x.sims.size()<y.sims.size();
+                    return opcion==1?normalizar(x.nombre)>normalizar(y.nombre):normalizar(x.nombre)<normalizar(y.nombre);
+                });
+                for(int pos=0;pos<indices.size();++pos)rejilla->addWidget(tarjetas[indices[pos]],pos/2,pos%2);
+                contador->setText(QString("Mostrando %1 de %2 clientes").arg(indices.size()).arg(clientes.size()));
+                vacio->setVisible(indices.isEmpty());limpiarVacio->setVisible(indices.isEmpty());
+            };
+            auto limpiar=[buscar,filtro,orden,simulaciones](){buscar->clear();filtro->setCurrentIndex(0);orden->setCurrentIndex(0);simulaciones->setCurrentIndex(0);};
+            connect(controles->limpiar,&QPushButton::clicked,f,limpiar);connect(limpiarVacio,&QPushButton::clicked,f,limpiar);
+            connect(buscar,&QLineEdit::textChanged,f,filtrar);
+            for(auto *combo:{filtro,orden,simulaciones})connect(combo,&QComboBox::currentTextChanged,f,filtrar);
+            filtrar();
         } else if(pagina=="Administradores") {
             l->addWidget(label("Equipo de administración · Mismos permisos para todas las cuentas", "muted"));
             auto *barra=new QHBoxLayout;
@@ -146,14 +187,14 @@ private:
                 auto *c=new QVBoxLayout(frame); c->setContentsMargins(20,20,20,20); c->setSpacing(12);
                 auto *cabecera=new QHBoxLayout; auto *avatar=new AvatarCliente; avatar->setFixedSize(56,56);
                 avatar->setFoto(admins[i].foto);cabecera->addWidget(avatar); cabecera->addStretch();
-                cabecera->addWidget(label(i==0?"TU SESIÓN":"ADMINISTRADOR","badge")); c->addLayout(cabecera);
+                cabecera->addWidget(label(esSesion(i)?"TU SESIÓN":"ADMINISTRADOR","badge")); c->addLayout(cabecera);
                 c->addWidget(label(admins[i].nombre,"section")); c->addWidget(label(admins[i].correo,"muted"));
                 c->addWidget(label("Consulta su ficha con el folio de tu sesión activa.","caption"));
                 auto *acciones=new QHBoxLayout; c->addLayout(acciones);
                 connect(button("Ver información →",acciones),&QPushButton::clicked,this,[this,i](){verAdmin(i);});
-                auto *eliminar=button("Eliminar",acciones); eliminar->setEnabled(i!=0&&admins.size()>1);
-                eliminar->setToolTip(i==0?"No puedes eliminar tu propia sesión":"Eliminar esta cuenta administrativa");
-                connect(eliminar,&QPushButton::clicked,this,[this,i](){if(confirmar("Eliminar a "+admins[i].nombre+". Perderá el acceso administrativo.")){admins.removeAt(i);render();}});
+                auto *eliminar=button("Eliminar",acciones); eliminar->setEnabled(!esSesion(i)&&admins.size()>1);
+                eliminar->setToolTip(esSesion(i)?"No puedes eliminar tu propia sesión":"Eliminar esta cuenta administrativa");
+                connect(eliminar,&QPushButton::clicked,this,[this,i](){if(!esSesion(i)&&confirmar("Eliminar a "+admins[i].nombre+". Perderá el acceso administrativo.")){admins.removeAt(i);render();}});
                 grid->addWidget(frame,i/2,i%2); tarjetas.append(frame);
             }
             auto *vacio=label("No hay administradores que coincidan con la búsqueda.","muted"); vacio->hide(); l->addWidget(vacio);
@@ -248,13 +289,13 @@ private:
         QDialog d(this);d.setWindowTitle("Información del administrador");d.setMinimumWidth(480);
         auto *l=new QVBoxLayout(&d);l->setContentsMargins(24,24,24,24);l->setSpacing(16);
         auto *cabecera=new QHBoxLayout;auto *avatar=new AvatarCliente;avatar->setFixedSize(64,64);avatar->setFoto(a.foto);
-        if(i==0){auto *camara=botonFoto();cabecera->addWidget(avatarEditable(avatar,camara));
-            connect(camara,&QPushButton::clicked,&d,[&,i](){if(i!=0)return;if(editarFoto(&d,admins[i].foto,[&](){return confirmar("Cambiar tu foto de perfil");})){avatar->setFoto(admins[i].foto);render();}});
+        if(esSesion(i)){auto *camara=botonFoto();cabecera->addWidget(avatarEditable(avatar,camara));
+            connect(camara,&QPushButton::clicked,&d,[&,i](){if(!esSesion(i))return;if(editarFoto(&d,admins[i].foto,[&](){return confirmar("Cambiar tu foto de perfil");})){avatar->setFoto(admins[i].foto);render();}});
         }else cabecera->addWidget(avatar);
         cabecera->addWidget(label(a.nombre,"title"),1);l->addLayout(cabecera);
-        l->addWidget(label(i==0?"Sesión actual · Administrador":"Administrador · Mismos permisos","badge"));
+        l->addWidget(label(esSesion(i)?"Sesión actual · Administrador":"Administrador · Mismos permisos","badge"));
         auto *datos=new QFormLayout;datos->setSpacing(16);datos->addRow("Nombre",label(a.nombre));datos->addRow("Correo",label(a.correo));datos->addRow("Fecha de nacimiento",label(a.nacimiento.toString("dd/MM/yyyy")));datos->addRow("Contraseña",label("Protegida · No se muestra"));datos->addRow("Folio",label("Reservado · Se entrega al crear la cuenta"));l->addLayout(datos);
-        l->addWidget(label("Consulta autorizada con el folio de Enrique, administrador de la sesión de demostración.","caption"));
+        l->addWidget(label("Consulta autorizada por "+nombreSesion()+", administrador de la sesión actual.","caption"));
         connect(button("Editar datos",l),&QPushButton::clicked,&d,[&,i](){
             if(editarPerfil(&d,admins[i].nombre,admins[i].correo,admins[i].nacimiento,[&,i](const QString &correo,const QString &clave){
                 for(int j=0;j<admins.size();++j)if(j!=i&&admins[j].correo.compare(correo,Qt::CaseInsensitive)==0){QMessageBox::warning(&d,"Correo registrado","Otro administrador ya utiliza ese correo.");return false;}
@@ -263,11 +304,11 @@ private:
                 return true;
             })){d.accept();render();}
         });
-        if(i==0) connect(button("Revelar mi folio",l),&QPushButton::clicked,&d,[&,i](){
-            if(i!=0)return; // Solo el propietario de la sesión puede consultar su folio.
+        if(esSesion(i)) connect(button("Revelar mi folio",l),&QPushButton::clicked,&d,[&,i](){
+            if(!esSesion(i))return; // Solo el propietario de la sesión puede consultar su folio.
             bool ok=false;QString codigo=QInputDialog::getText(&d,"Autorización de otro administrador","Para revelar tu folio, otro administrador debe autorizar con el suyo.",QLineEdit::Password,{},&ok);
             if(!ok)return;bool autorizado=false;
-            for(int j=0;j<admins.size();++j)if(j!=0&&j!=i&&admins[j].folio==codigo.trimmed())autorizado=true;
+            for(int j=0;j<admins.size();++j)if(!esSesion(j)&&j!=i&&admins[j].folio==codigo.trimmed())autorizado=true;
             if(!autorizado){QMessageBox::warning(&d,"No autorizado","Se requiere el folio de otro administrador.");return;}
             QMessageBox::information(&d,"Folio de "+admins[i].nombre,admins[i].folio);
         });
