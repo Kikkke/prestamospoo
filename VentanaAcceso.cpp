@@ -10,7 +10,6 @@
 #include <QFrame>
 #include <QStackedWidget>
 #include <QVBoxLayout>
-#include <QScrollArea>
 
 VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
 {
@@ -59,11 +58,7 @@ VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
     tarjeta->setMaximumWidth(470);
     auto *tarjetaLayout = new QVBoxLayout(tarjeta);
     tarjetaLayout->setContentsMargins(28, 24, 28, 24);
-    auto *scrollFormularios=new QScrollArea;
-    scrollFormularios->setWidgetResizable(true);
-    scrollFormularios->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    scrollFormularios->setWidget(formularios);
-    tarjetaLayout->addWidget(scrollFormularios);
+    tarjetaLayout->addWidget(formularios);
     fila->addWidget(tarjeta, 1);
     auto *panel = new PanelPrincipal;
     pantallas->addWidget(acceso);
@@ -89,6 +84,7 @@ VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
             [formularios, login]() { formularios->setCurrentWidget(login); });
     connect(login, &PantallaLogin::inicioSolicitado, this,
             [pantallas, panel]() { pantallas->setCurrentWidget(panel); });
+    connect(registro, &PantallaRegistro::perfilDemoCreado, panel, &PanelPrincipal::cargarPerfilDemo);
     connect(registro, &PantallaRegistro::inicioSolicitado, this,
             [pantallas, panel]() { pantallas->setCurrentWidget(panel); });
     connect(panel, &PanelPrincipal::salirSolicitado, this,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QWidget>
+#include <QDate>
 
 class PantallaRegistro : public QWidget
 {
@@ -11,5 +12,6 @@ public:
 
 signals:
     void inicioSolicitado();
+    void perfilDemoCreado(const QString &nombres, const QString &paterno, const QString &materno, const QString &correo, const QDate &nacimiento);
     void volverSolicitado();
 };

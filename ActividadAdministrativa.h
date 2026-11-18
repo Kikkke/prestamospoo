@@ -1,4 +1,5 @@
 #pragma once
+#include "SelectorDesplegable.h"
 #include "CampoNacimiento.h"
 #include <QTableWidget>
 #include <QHeaderView>
@@ -76,7 +77,7 @@ public:
     QSize minimumSizeHint() const override { return QSize(300,400); }
     ActividadAdministrativa(QWidget *parent=nullptr):QWidget(parent) {
         setObjectName("page");
-        QStringList nombres={"Enrique","Pedro","Uziel","Alexander","Jared"};
+        QStringList nombres={"Enrique","Pedro","Uziel Alexander","Alexander","Christian Jared"};
         QStringList tipos={"Administrador creado","Administrador editado","Administrador eliminado","Cliente deshabilitado","Cliente reactivado","Simulación editada","Simulación eliminada","Apelación aprobada","Apelación rechazada","Contraseña cambiada","Folio propio consultado"};
         for(int i=0;i<24;++i){int t=i%tipos.size();eventos.append({QDateTime(QDate::currentDate().addDays(-i/3),QTime(18-i%3,35)),nombres[i%5],tipos[t],t<3?"Cuenta administrativa de muestra":t==10?"Cuenta propia":"Cliente de muestra · Simulación de estudios",
             t==8?"La solicitud requiere información adicional para justificar la reactivación. Se comunica el motivo al cliente.":t==10?"Consulta propia autorizada por otro administrador. El valor del folio no se registra.":"Acción ilustrativa para mostrar la organización del historial administrativo.",
@@ -90,8 +91,8 @@ public:
         total=valores[0];participantes=valores[1];resueltas=valores[2];
         buscar=new QLineEdit;buscar->setPlaceholderText("Buscar administrador, cliente, simulación o descripción…");l->addWidget(buscar);
         filtros=new QGridLayout;l->addLayout(filtros);
-        admin=new QComboBox;admin->addItem("Todos los administradores");admin->addItems(nombres);
-        tipo=new QComboBox;tipo->addItem("Todas las acciones");tipo->addItems(tipos);
+        admin=new SelectorDesplegable;admin->addItem("Todos los administradores");admin->addItems(nombres);
+        tipo=new SelectorDesplegable;tipo->addItem("Todas las acciones");tipo->addItems(tipos);
         desde=crearCampoNacimiento();hasta=crearCampoNacimiento();desde->setDate(QDate::currentDate().addDays(-30));hasta->setDate(QDate::currentDate());
         auto *limpiar=new QPushButton("Limpiar filtros");
         for(auto *combo:{admin,tipo}){combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);combo->setMinimumContentsLength(10);combo->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);}

@@ -1,8 +1,3 @@
--- Esquema sencillo y datos de muestra.
--- Las validaciones de negocio se implementarán en el backend.
--- Conservar claves primarias y foráneas para relacionar las tablas.
--- Fechas de carga de muestra: 15/11/2026. Contraseñas pendientes (NULL).
--- Ejecutar en una base nueva; este script no se ha ejecutado contra MySQL.
 
 CREATE DATABASE financionantimex;
 USE financionantimex;

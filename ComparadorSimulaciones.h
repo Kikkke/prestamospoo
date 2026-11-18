@@ -1,4 +1,5 @@
 #pragma once
+#include "SelectorDesplegable.h"
 #include <QComboBox>
 #include <QCompleter>
 #include <QFrame>
@@ -27,7 +28,7 @@ public:
             c->addWidget(etiqueta(i==0?"OPCIÓN A":"OPCIÓN B","eyebrow"));
             auto *titulo=etiqueta("Buscar y elegir simulación","caption");
             c->addWidget(titulo);
-            selectores[i]=new QComboBox;
+            selectores[i]=new SelectorDesplegable;
             auto *selector=selectores[i];
             selector->setEditable(true); selector->setInsertPolicy(QComboBox::NoInsert);
             selector->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Fixed);

@@ -116,5 +116,13 @@ inline QString temaOscuro()
         QCalendarWidget QMenu::item:selected { background: #493128; }
         QCalendarWidget QAbstractItemView { background: #171719; alternate-background-color: #242126; color: #f4f4f5; selection-background-color: #ed916f; selection-color: #17100e; outline: 0; border: 1px solid #484248; font-size: 14px; }
         QCalendarWidget QAbstractItemView:disabled { color: #777077; }
+
+        QListView#selectorOpciones { background: #1b1b20; color: #f4f4f5; border: 1px solid #705044; border-radius: 8px; padding: 4px; outline: 0; }
+        QListView#selectorOpciones::item { padding: 4px 10px; min-height: 28px; border-radius: 4px; }
+        QListView#selectorOpciones::item:hover { background: #33241f; color: #ffffff; }
+        QListView#selectorOpciones::item:selected { background: #493128; color: #ffffff; }
+        QListView#selectorOpciones QScrollBar:vertical { background: #242126; width: 12px; margin: 4px 1px; }
+        QListView#selectorOpciones QScrollBar::handle:vertical { background: #ed916f; min-height: 28px; border-radius: 5px; }
+        QListView#selectorOpciones QScrollBar::handle:vertical:hover { background: #ffab89; }
     )");
 }

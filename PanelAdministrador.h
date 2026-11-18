@@ -1,4 +1,5 @@
 #pragma once
+#include "SelectorDesplegable.h"
 #include "FondoAcceso.h"
 #include "MarcaFinancionanti.h"
 #include "CampoContrasena.h"
@@ -39,13 +40,13 @@ public:
     struct Sim { QString nombre; double monto; double tasa; int meses; };
     struct Cliente { QString nombre,correo; QDate ultimo; bool habilitado=true; QString motivo; QList<Sim> sims; QDate nacimiento; };
     struct Apelacion { int cliente; QString texto,estado,respuesta; QDate fecha; };
-    struct Admin { QString nombre,correo,folio; QDate nacimiento; QByteArray claveDemo; QPixmap foto; };
+    struct Admin { QString nombre,correo,folio; QDate nacimiento; QByteArray claveDemo; QPixmap foto; QString paterno,materno; QString completo() const {return nombreCompleto(nombre,paterno,materno);} };
     QList<Cliente> clientes;
     QList<Apelacion> apelaciones;
     QList<Admin> admins;
     PanelAdministrador(QWidget *parent=nullptr):QWidget(parent) {
         setObjectName("dashboard");
-        admins={{"Enrique","lopez.garfias.enrique@gmail.com","ENR310307GB34",QDate(2007,3,31)},{"Pedro","pescador.velazquez.pedro@gmail.com","PED090507XJ87",QDate(2007,5,9)},{"Uziel","uzielpime@gmail.com","UZI211207CY79",QDate(2007,12,21)},{"Alexander","alexxaanderjimenez@gmail.com","ALE220905FQ64",QDate(2005,9,22)},{"Jared","tcrid67@gmail.com","JAR270907WW20",QDate(2007,9,27)}};
+        admins={{"Enrique","lopez.garfias.enrique@gmail.com","ENR310307GB34",QDate(2007,3,31),{},{},"López","Garfias"},{"Pedro","pescador.velazquez.pedro@gmail.com","PED090507XJ87",QDate(2007,5,9),{},{},"Pescador","Velázquez"},{"Uziel Alexander","uzielpime@gmail.com","UZI211207CY79",QDate(2007,12,21),{},{},"Pimentel","Ramírez"},{"Alexander","alexxaanderjimenez@gmail.com","ALE220905FQ64",QDate(2005,9,22),{},{},"Mendoza","Jiménez"},{"Christian Jared","tcrid67@gmail.com","JAR270907WW20",QDate(2007,9,27),{},{},"Castillo","Hernández"}};
         QStringList nombres={"Ana López","Luis Pérez","María Torres","Carlos Ruiz","Sofía García","Diego Hernández"};
         for(int i=0;i<nombres.size();++i) clientes.append({nombres[i],QString("cliente%1@demo.mx").arg(i+1),QDate::currentDate().addMonths(-i*2),true,{},{{"Computadora",12000,0,3},{"Estudios",24000,12,12}},QDate(1995+i,3+i,10+i)});
         clientes[0].habilitado=false; clientes[0].motivo="Inactividad";
@@ -188,7 +189,7 @@ private:
                 auto *cabecera=new QHBoxLayout; auto *avatar=new AvatarCliente; avatar->setFixedSize(56,56);
                 avatar->setFoto(admins[i].foto);cabecera->addWidget(avatar); cabecera->addStretch();
                 cabecera->addWidget(label(esSesion(i)?"TU SESIÓN":"ADMINISTRADOR","badge")); c->addLayout(cabecera);
-                c->addWidget(label(admins[i].nombre,"section")); c->addWidget(label(admins[i].correo,"muted"));
+                c->addWidget(label(admins[i].completo(),"section")); c->addWidget(label(admins[i].correo,"muted"));
                 c->addWidget(label("Consulta su ficha con el folio de tu sesión activa.","caption"));
                 auto *acciones=new QHBoxLayout; c->addLayout(acciones);
                 connect(button("Ver información →",acciones),&QPushButton::clicked,this,[this,i](){verAdmin(i);});
@@ -200,7 +201,7 @@ private:
             auto *vacio=label("No hay administradores que coincidan con la búsqueda.","muted"); vacio->hide(); l->addWidget(vacio);
             connect(buscar,&QLineEdit::textChanged,f,[this,buscar,grid,tarjetas,contador,vacio](){
                 int visibles=0;
-                for(int i=0;i<tarjetas.size();++i){bool coincide=(admins[i].nombre+" "+admins[i].correo).contains(buscar->text().trimmed(),Qt::CaseInsensitive); tarjetas[i]->setVisible(coincide);if(coincide){grid->addWidget(tarjetas[i],visibles/2,visibles%2);++visibles;}}
+                for(int i=0;i<tarjetas.size();++i){bool coincide=(admins[i].completo()+" "+admins[i].correo).contains(buscar->text().trimmed(),Qt::CaseInsensitive); tarjetas[i]->setVisible(coincide);if(coincide){grid->addWidget(tarjetas[i],visibles/2,visibles%2);++visibles;}}
                 contador->setText(QString("Mostrando %1 de %2 administradores").arg(visibles).arg(admins.size()));vacio->setVisible(visibles==0);
             });
         } else if(pagina=="Actividad administrativa") {
@@ -213,7 +214,7 @@ private:
                 auto *c=card(resumen);c->addWidget(label(estado=="Pendiente"?"Pendientes":estado=="Aprobada"?"Aprobadas":"Rechazadas","muted"));c->addWidget(label(QString::number(cantidad),estado=="Pendiente"?"metricAccent":"metric"));
             }
             auto *barra=new QHBoxLayout; auto *buscar=new QLineEdit;buscar->setPlaceholderText("Buscar apelación por cliente o correo…");
-            auto *filtro=new QComboBox;filtro->addItems({"Todas","Pendiente","Aprobada","Rechazada"});barra->addWidget(buscar,1);barra->addWidget(filtro);l->addLayout(barra);
+            auto *filtro=new SelectorDesplegable;filtro->addItems({"Todas","Pendiente","Aprobada","Rechazada"});barra->addWidget(buscar,1);barra->addWidget(filtro);l->addLayout(barra);
             QList<QWidget*> tarjetas;
             for(int i=0;i<apelaciones.size();++i){const auto &a=apelaciones[i];auto *c=card(l);tarjetas.append(c->parentWidget());
                 auto *cabecera=new QHBoxLayout;auto *avatar=new AvatarCliente;avatar->setFixedSize(44,44);cabecera->addWidget(avatar);
@@ -292,12 +293,12 @@ private:
         if(esSesion(i)){auto *camara=botonFoto();cabecera->addWidget(avatarEditable(avatar,camara));
             connect(camara,&QPushButton::clicked,&d,[&,i](){if(!esSesion(i))return;if(editarFoto(&d,admins[i].foto,[&](){return confirmar("Cambiar tu foto de perfil");})){avatar->setFoto(admins[i].foto);render();}});
         }else cabecera->addWidget(avatar);
-        cabecera->addWidget(label(a.nombre,"title"),1);l->addLayout(cabecera);
+        cabecera->addWidget(label(a.completo(),"title"),1);l->addLayout(cabecera);
         l->addWidget(label(esSesion(i)?"Sesión actual · Administrador":"Administrador · Mismos permisos","badge"));
-        auto *datos=new QFormLayout;datos->setSpacing(16);datos->addRow("Nombre",label(a.nombre));datos->addRow("Correo",label(a.correo));datos->addRow("Fecha de nacimiento",label(a.nacimiento.toString("dd/MM/yyyy")));datos->addRow("Contraseña",label("Protegida · No se muestra"));datos->addRow("Folio",label("Reservado · Se entrega al crear la cuenta"));l->addLayout(datos);
+        auto *datos=new QFormLayout;datos->setSpacing(16);datos->addRow("Nombre(s)",label(a.nombre));datos->addRow("Apellido paterno",label(a.paterno));datos->addRow("Apellido materno",label(a.materno));datos->addRow("Correo",label(a.correo));datos->addRow("Fecha de nacimiento",label(a.nacimiento.toString("dd/MM/yyyy")));datos->addRow("Contraseña",label("Protegida · No se muestra"));datos->addRow("Folio",label("Reservado · Se entrega al crear la cuenta"));l->addLayout(datos);
         l->addWidget(label("Consulta autorizada por "+nombreSesion()+", administrador de la sesión actual.","caption"));
         connect(button("Editar datos",l),&QPushButton::clicked,&d,[&,i](){
-            if(editarPerfil(&d,admins[i].nombre,admins[i].correo,admins[i].nacimiento,[&,i](const QString &correo,const QString &clave){
+            if(editarPerfil(&d,admins[i].nombre,admins[i].paterno,admins[i].materno,admins[i].correo,admins[i].nacimiento,[&,i](const QString &correo,const QString &clave){
                 for(int j=0;j<admins.size();++j)if(j!=i&&admins[j].correo.compare(correo,Qt::CaseInsensitive)==0){QMessageBox::warning(&d,"Correo registrado","Otro administrador ya utiliza ese correo.");return false;}
                 if(!confirmar("Autorizar edición de datos de "+admins[i].nombre))return false;
                 if(!clave.isEmpty())admins[i].claveDemo=QCryptographicHash::hash(clave.toUtf8(),QCryptographicHash::Sha256);
@@ -319,11 +320,11 @@ private:
         auto *l=new QVBoxLayout(&d);l->setContentsMargins(24,24,24,24);l->setSpacing(14);
         l->addWidget(label("Nuevo administrador","title"));l->addWidget(label("Tendrá los mismos permisos que el resto del equipo. Su folio se generará al crear la cuenta.","muted"));
         auto *f=new QFormLayout;f->setRowWrapPolicy(QFormLayout::WrapAllRows);f->setSpacing(10);l->addLayout(f);
-        auto *nombre=new QLineEdit;nombre->setPlaceholderText("Nombre completo");auto *correo=new QLineEdit;correo->setPlaceholderText("nombre@correo.com");auto *clave=new QLineEdit;agregarVisibilidad(clave);
+        auto *nombre=new QLineEdit;nombre->setPlaceholderText("Nombre o nombres");auto *paterno=new QLineEdit;auto *materno=new QLineEdit;auto *correo=new QLineEdit;correo->setPlaceholderText("nombre@correo.com");auto *clave=new QLineEdit;agregarVisibilidad(clave);
         auto *fecha=crearCampoNacimiento();
         auto *confirmacion=new QLineEdit;agregarVisibilidad(confirmacion);confirmacion->setPlaceholderText("Repite la contraseña");
 
-        f->addRow("Nombre",nombre);f->addRow("Correo",correo);f->addRow("Contraseña",clave);f->addRow("Confirmar contraseña",confirmacion);f->addRow("Fecha de nacimiento",fecha);
+        f->addRow("Nombre(s)",nombre);agregarApellidos(f,paterno,materno);f->addRow("Correo",correo);f->addRow("Contraseña",clave);f->addRow("Confirmar contraseña",confirmacion);f->addRow("Fecha de nacimiento",fecha);
         auto *error=label("","passwordHint");l->addWidget(error);l->addWidget(label("Demostración: utiliza datos ficticios. La contraseña no se conserva ni autentica nuevas sesiones.","caption"));
         auto *acciones=new QHBoxLayout;l->addLayout(acciones);connect(button("Cancelar",acciones),&QPushButton::clicked,&d,&QDialog::reject);auto *crear=button("Crear administrador",acciones);crear->setObjectName("primary");
         connect(crear,&QPushButton::clicked,&d,[&](){
@@ -335,9 +336,9 @@ private:
             if(!confirmar("Crear administrador: "+nombre->text().trimmed()+" · "+correo->text().trimmed()))return;
             QString folio;bool repetido;
             do { folio=prefijo+fecha->date().toString("ddMMyy");for(int k=0;k<2;++k)folio+=QChar('A'+QRandomGenerator::system()->bounded(26));for(int k=0;k<2;++k)folio+=QChar('0'+QRandomGenerator::system()->bounded(10));repetido=false;for(const auto &a:admins)if(a.folio==folio)repetido=true; }while(repetido);
-            admins.append({nombre->text().trimmed(),correo->text().trimmed(),folio,fecha->date()});
+            admins.append({nombre->text().trimmed(),correo->text().trimmed(),folio,fecha->date(),{},{},paterno->text().trimmed(),materno->text().trimmed()});
             QDialog entrega(&d);entrega.setWindowTitle("Administrador creado");entrega.setMinimumWidth(480);auto *e=new QVBoxLayout(&entrega);e->setContentsMargins(24,24,24,24);e->setSpacing(16);
-            e->addWidget(label("Cuenta de muestra creada","title"));e->addWidget(label(nombre->text().trimmed()+" · "+correo->text().trimmed(),"muted"));e->addWidget(label("FOLIO ASIGNADO","eyebrow"));
+            e->addWidget(label("Cuenta de muestra creada","title"));e->addWidget(label(nombreCompleto(nombre->text(),paterno->text(),materno->text())+" · "+correo->text().trimmed(),"muted"));e->addWidget(label("FOLIO ASIGNADO","eyebrow"));
             auto *valor=new QLineEdit(folio);valor->setReadOnly(true);e->addWidget(valor);e->addWidget(label("Guarda este folio. Puedes seleccionarlo y copiarlo; no aparecerá en el directorio de administradores.","caption"));
             connect(button("Entendido",e),&QPushButton::clicked,&entrega,&QDialog::accept);entrega.exec();d.accept();render();
         });d.exec();

@@ -305,13 +305,18 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     campos->addWidget(correoPerfil,1,0);campos->addWidget(fechaPerfil,1,1);
     campos->addWidget(texto("CONTRASEÑA","caption"),2,0);campos->addWidget(texto("••••••••","section"),3,0);
     campos->addWidget(texto("Puedes cambiarla desde el botón de edición.","muted"),3,1);
-    struct PerfilDemo {QString nombre="Cliente de muestra",correo="cliente@demo.mx";QDate nacimiento{2000,1,1};QByteArray clave;QPixmap foto;};
+    struct PerfilDemo {QString nombre="Cliente de muestra",correo="cliente@demo.mx",paterno,materno;QDate nacimiento{2000,1,1};QByteArray clave;QPixmap foto;};
     auto modelo=std::make_shared<PerfilDemo>();
     connect(camara,&QPushButton::clicked,this,[this,modelo,avatar,avatarLateral](){if(editarFoto(this,modelo->foto,[](){return true;})){avatar->setFoto(modelo->foto);avatarLateral->setFoto(modelo->foto);}});
 
-    auto actualizar=[modelo,nombrePerfil,correoPerfil,fechaPerfil,saludoLateral](){saludoLateral->setText("Bienvenido, "+(modelo->nombre=="Cliente de muestra"?QString("Usuario"):modelo->nombre));nombrePerfil->setText(modelo->nombre);correoPerfil->setText(modelo->correo);fechaPerfil->setText(modelo->nacimiento.toString("dd/MM/yyyy"));};actualizar();
+    auto actualizar=[modelo,nombrePerfil,correoPerfil,fechaPerfil,saludoLateral](){saludoLateral->setText("Bienvenido, "+(modelo->nombre=="Cliente de muestra"?QString("Usuario"):modelo->nombre));nombrePerfil->setText(nombreCompleto(modelo->nombre,modelo->paterno,modelo->materno));correoPerfil->setText(modelo->correo);fechaPerfil->setText(modelo->nacimiento.toString("dd/MM/yyyy"));};actualizar();
+    connect(this,&PanelPrincipal::cargarPerfilDemo,this,[modelo,actualizar,avatar,avatarLateral](const QString &nombres,const QString &paterno,const QString &materno,const QString &correo,const QDate &nacimiento){
+        modelo->nombre=nombres;modelo->paterno=paterno;modelo->materno=materno;
+        modelo->correo=correo;modelo->nacimiento=nacimiento;modelo->clave.clear();modelo->foto=QPixmap();
+        avatar->setFoto(modelo->foto);avatarLateral->setFoto(modelo->foto);actualizar();
+    });
     connect(editar,&QPushButton::clicked,this,[this,modelo,actualizar](){
-        if(editarPerfil(this,modelo->nombre,modelo->correo,modelo->nacimiento,[modelo](const QString &,const QString &clave){if(!clave.isEmpty())modelo->clave=QCryptographicHash::hash(clave.toUtf8(),QCryptographicHash::Sha256);return true;}))actualizar();
+        if(editarPerfil(this,modelo->nombre,modelo->paterno,modelo->materno,modelo->correo,modelo->nacimiento,[modelo](const QString &,const QString &clave){if(!clave.isEmpty())modelo->clave=QCryptographicHash::hash(clave.toUtf8(),QCryptographicHash::Sha256);return true;}))actualizar();
     });
     perfil->addWidget(texto("Cambios temporales de demostración. No modifican credenciales de acceso reales.","caption"));
     cuenta->addStretch();

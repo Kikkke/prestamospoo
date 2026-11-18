@@ -1,4 +1,5 @@
 #pragma once
+#include "SelectorDesplegable.h"
 #include <QWidget>
 #include <QGridLayout>
 #include <QComboBox>
@@ -21,9 +22,9 @@ public:
     QSize minimumSizeHint() const override{return QSize(240,80);}
     FiltrosClientes(QWidget *parent=nullptr):QWidget(parent){
         setObjectName("page");rejilla=new QGridLayout(this);rejilla->setContentsMargins(0,0,0,0);rejilla->setSpacing(12);rejilla->setSizeConstraint(QLayout::SetNoConstraint);
-        estado=new QComboBox;estado->setObjectName("filtroEstadoClientes");estado->addItems({"Todos","Activo","Inactivo","Deshabilitada"});
-        orden=new QComboBox;orden->setObjectName("ordenClientes");orden->addItems({"Nombre A–Z","Nombre Z–A","Acceso más reciente","Acceso más antiguo","Más simulaciones","Menos simulaciones"});
-        simulaciones=new QComboBox;simulaciones->setObjectName("filtroSimulacionesClientes");simulaciones->addItems({"Todos","Con simulaciones","Sin simulaciones"});
+        estado=new SelectorDesplegable;estado->setObjectName("filtroEstadoClientes");estado->addItems({"Todos","Activo","Inactivo","Deshabilitada"});
+        orden=new SelectorDesplegable;orden->setObjectName("ordenClientes");orden->addItems({"Nombre A–Z","Nombre Z–A","Acceso más reciente","Acceso más antiguo","Más simulaciones","Menos simulaciones"});
+        simulaciones=new SelectorDesplegable;simulaciones->setObjectName("filtroSimulacionesClientes");simulaciones->addItems({"Todos","Con simulaciones","Sin simulaciones"});
         limpiar=new QPushButton("Limpiar filtros");limpiar->setCursor(Qt::PointingHandCursor);
         for(auto *c:{estado,orden,simulaciones}){c->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);c->setMinimumContentsLength(10);c->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Fixed);}
         QList<QWidget*> controles={estado,orden,simulaciones,limpiar};QStringList titulos={"Estado","Ordenar por","Simulaciones",""};

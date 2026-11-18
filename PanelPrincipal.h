@@ -1,5 +1,6 @@
 #pragma once
 #include <QWidget>
+#include <QDate>
 
 class PanelPrincipal : public QWidget
 {
@@ -8,4 +9,5 @@ public:
     explicit PanelPrincipal(QWidget *parent = nullptr);
 signals:
     void salirSolicitado();
+    void cargarPerfilDemo(const QString &nombres, const QString &paterno, const QString &materno, const QString &correo, const QDate &nacimiento);
 };
