@@ -792,3 +792,7 @@ RNF-01 Seguridad en operaciones de base de datos El sistema deberá utilizar mec
 procesar los datos proporcionados por los usuarios en las operaciones con la base de datos, evitando la 
 ejecución de instrucciones SQL no autorizadas.
 ```
+
+## Acuerdo adicional: limpieza completa del prototipo
+
+La integración incluye retirar todas las referencias visibles y comportamientos provisionales, incluso mensajes pequeños, tooltips, diálogos y PDF. Aplicar el alcance y los criterios de la sección «Retirada completa del prototipo al integrar el backend» de [01_FRONTEND.md](01_FRONTEND.md). Conservar los avisos informativos propios del simulador y el diseño aprobado. No declarar completada una función únicamente por quitar sus leyendas temporales.

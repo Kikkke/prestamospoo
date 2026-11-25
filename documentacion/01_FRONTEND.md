@@ -145,3 +145,19 @@ Admite PNG/JPG/JPEG/WEBP/BMP según QImageReader disponible. Restablecer icono s
 Probar Windows a 100/125/150 % si están disponibles, tamaño mínimo y maximizado; formularios largos y diálogos deben tener scroll sin campos comprimidos. Revisar nombres compuestos, correos largos, mensajes multilinea, nombres de simulación de 50 caracteres, filtros con muchas opciones, tabla de 480 cuotas y PDF multipágina.
 Verificar hover/foco/selección/deshabilitado y casilla marcada/desmarcada; teclado Tab, espacio y Enter; acciones cancelar; ningún campo tapado por etiqueta. No asumir que `sizeHint` sin estilo es igual al tamaño final.
 El plugin offscreen usado en pruebas anteriores a veces renderizó cuadrados en lugar de letras por fuentes: sirve para medidas y lógica, NO valida legibilidad visual real. Validar con ventana real/captura antes de afirmar que está perfecto.
+
+## Retirada completa del prototipo al integrar el backend
+
+Acuerdo explícito del propietario, 25/11/2026: revisar **todos los textos y comportamientos del frontend**, incluidos los mensajes pequeños, para que la versión integrada no conserve referencias al prototipo. Esta revisión es obligatoria para cada función que se conecte y para el cierre de la integración.
+
+- Quitar o sustituir «Demo», «Demostración», «Modo prototipo», «Datos de muestra», «Datos ilustrativos», «Ejemplo ilustrativo», «Cambios temporales», «No se guardan al cerrar», «Próximamente» y cualquier frase equivalente, aunque sea una nota, etiqueta, placeholder o tooltip.
+- Revisar login, registro, barras laterales/superiores, tarjetas, filtros, tablas, perfiles, fichas administrativas, diálogos de folio y confirmación, errores, notificaciones, estados vacíos, ayuda/Acerca de, títulos de ventanas y PDF exportados. No limitar la limpieza a los encabezados visibles.
+- Retirar accesos de demostración que eviten autenticar, credenciales sugeridas del prototipo, navegación directa sin validación, resultados fijos y listas locales independientes. Conectar las pantallas a la sesión y a los datos persistidos correctos.
+- Sustituir botones deshabilitados provisionalmente por acciones reales cuando se implementen. Conservar estados deshabilitados legítimos por permisos, validaciones o ausencia de datos.
+- Reescribir ayudas y mensajes según el comportamiento real. No afirmar que se guardó, autenticó, autorizó o exportó algo hasta comprobar el éxito de la operación.
+- Conservar el fondo, paleta, logo y composición aprobados. Esta limpieza no autoriza un rediseño ni eliminar los datos iniciales SQL acordados; tampoco borrar ejemplos educativos útiles del glosario.
+- Mantener el aviso de que las simulaciones son informativas y no constituyen una oferta, aprobación o contrato de préstamo. En PDF puede usarse «Simulación informativa» al sustituir «Ejemplo ilustrativo»: el alcance informativo sigue siendo verdadero en la versión final.
+
+**Criterio de finalización:** revisar cadenas del código y recorrer las pantallas de ambos roles, incluidos diálogos, errores y PDF. No debe quedar ninguna referencia de prototipo presentada al usuario en los flujos ya integrados. Las menciones históricas de esta documentación sí se conservan para explicar el punto de partida. Buscar palabras es una ayuda; comprobar su contexto evita eliminar avisos o ejemplos educativos válidos.
+
+La retirada se hace junto con la implementación real de cada función; ocultar los mensajes por sí solo no completa el backend. Esta actualización modifica únicamente documentación.

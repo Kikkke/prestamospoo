@@ -233,3 +233,7 @@ Fase 6: retirar constantes de prototipo, leyendas, catálogos paralelos y acceso
 | MySQL caído y reabrir aplicación | Error claro; no pérdida silenciosa ni retorno a muestras |
 
 Los límites de archivos/textos propuestos y comportamiento de cuentas semilla sin términos necesitan confirmación cuando se implemente; no bloquean la documentación. No afirmar que estas pruebas ya se ejecutaron: son criterios de aceptación del backend futuro.
+
+## Acuerdo adicional: limpieza completa del prototipo
+
+La integración incluye retirar todas las referencias visibles y comportamientos provisionales, incluso mensajes pequeños, tooltips, diálogos y PDF. Aplicar el alcance y los criterios de la sección «Retirada completa del prototipo al integrar el backend» de [01_FRONTEND.md](01_FRONTEND.md). Conservar los avisos informativos propios del simulador y el diseño aprobado. No declarar completada una función únicamente por quitar sus leyendas temporales.

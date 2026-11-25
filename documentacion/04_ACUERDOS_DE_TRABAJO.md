@@ -141,3 +141,7 @@ No volver a preguntar si el entorno será local, si todos los administradores ve
 8. Entregar resumen breve, rutas modificadas, comprobaciones y límites reales. Si falta algo externo, decir exactamente qué falta y qué se pudo terminar.
 
 Esta entrega es únicamente documental: sustituye once Markdown antiguos por cinco documentos consolidados. No implementa el backend, no aplica el SQL, no establece contraseñas, no cambia recursos visuales ni modifica las validaciones de la aplicación.
+
+## Acuerdo adicional: limpieza completa del prototipo
+
+La integración incluye retirar todas las referencias visibles y comportamientos provisionales, incluso mensajes pequeños, tooltips, diálogos y PDF. Aplicar el alcance y los criterios de la sección «Retirada completa del prototipo al integrar el backend» de [01_FRONTEND.md](01_FRONTEND.md). Conservar los avisos informativos propios del simulador y el diseño aprobado. No declarar completada una función únicamente por quitar sus leyendas temporales.
