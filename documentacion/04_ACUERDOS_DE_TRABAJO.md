@@ -83,9 +83,9 @@ Eliminar esos textos no significa borrar assets, el cascarón, código, SQL, PDF
 - Base vigente está en aplicacion-cpp/bd/Financionanti.sql, no en base-datos/01_esquema_y_muestras.sql.
 - Contraseñas: acuerdo consolidado PBKDF2-HMAC-SHA-256 mediante Qt, explicado en 02. No SHA-256 rápido simple ni cifrado reversible. Los parámetros de implementación recomendados no son texto literal del PDF.
 - Proyecto local con MySQL y Workbench; root es el usuario de conexión pedido. La contraseña local se configura privadamente, no en estos archivos ni en CMake.
-- No inventar contraseñas de las cuentas iniciales: password_hash NULL significa falta establecerlas. No convertir folio ni admin123 de un ejemplo antiguo en contraseña definitiva.
+- Actualización 26/11/2026: el propietario proporcionó las cinco claves administrativas y aceptó las siete propuestas para clientes. Se incluyen solo sus hashes en el SQL; nunca usar el folio como contraseña.
 - Conservar datos iniciales/asignaciones SQL y aclarar lo que era muestra de interfaz. Al conectar, eliminar accesos y leyendas demo; no presentar como real actividad administrativa inventada.
-- Términos: lectura hasta abajo habilita posibilidad de aceptar, clic prematuro avisa, nunca aceptación automática. Guardar última versión/fecha; no atribuir consentimiento retroactivo.
+- Términos: lectura hasta abajo habilita posibilidad de aceptar, clic prematuro avisa, nunca aceptación automática. Guardar última versión/fecha. Excepción acordada: las 12 cuentas iniciales se consideran ya aceptadas por declaración del propietario.
 
 ## 4. Lecciones de errores visuales anteriores
 
@@ -105,7 +105,7 @@ Eliminar esos textos no significa borrar assets, el cascarón, código, SQL, PDF
 ## 5. Qué se conoce y qué no se debe afirmar
 
 Se revisaron archivos fuente, SQL, Markdown anteriores y PDF suministrado para esta consolidación. El frontend existe y ha pasado revisiones visuales previas con el usuario. La amortización de muestras y exportación multipágina tienen implementación real local. Aun así, sus listas, autorizaciones y perfiles siguen siendo temporales en muchos módulos.
-No se ha demostrado una integración de MySQL, autentificación persistente, migración de contraseñas, auditoría real ni aceptación persistida. Las pruebas propuestas en 02 no son pruebas aprobadas. La comprobación SQLite en memoria de semillas no equivale a ejecutar MySQL ni a validar su driver.
+Actualización 26/11/2026: conexión MySQL, autenticación, registro y aceptación persistida ya cuentan con pruebas reales en una base aislada. La auditoría y los módulos de gestión siguen pendientes. El plan completo de pruebas de 02 no equivale a que todas esas funciones estén implementadas.
 No afirmar acceso a conversaciones externas ni al último diagrama completo que no se haya abierto. El diagrama puede necesitar actualización al implementar roles/servicios: el modelo de 02 es una propuesta de organización coherente, no una certificación del PDF .drawio histórico.
 El original de requisitos está en Descargas; su texto completo queda en 00. Texto extraído conserva requisitos, pero no toda la maquetación del PDF. Reglas corregidas se indican antes del anexo para no implementar contradicciones accidentalmente.
 
@@ -115,10 +115,10 @@ No bloquean la entrega de documentación. Preguntar solo cuando afecten la tarea
 
 | Tema | Qué falta acordar / propuesta claramente identificada |
 |---|---|
-| Contraseñas iniciales | Procedimiento local de establecimiento/activación para las 12 cuentas con hash NULL. No inventar claves comunes. |
-| Apellido materno | El formulario lo incluye; obligatoriedad ante personas que no lo tienen no está expresamente fijada. Propuesta: opcional, validar caracteres si se proporciona. |
+| Contraseñas iniciales | Resuelto: hashes PBKDF2 directamente en los INSERT; administradores según claves del propietario. |
+| Apellidos | Resuelto: paterno y materno obligatorios, tanto en alta como en edición. |
 | Nombres cortos de admin | El folio exige tres letras; propuesta rechazar alta si la normalización no reúne tres, sin impedir ese nombre para un cliente. |
-| Términos en cuentas semilla | No hay aceptación inicial. Propuesta solicitarla antes de primer uso operativo y persistir solo la acción explícita. Concretar el flujo, sin marcar automáticamente. |
+| Términos en cuentas semilla | Resuelto: el propietario declaró que ya los aceptaron. INSERT con versión 1 y fecha inicial; registro público conserva aceptación manual. |
 | Foto máxima | Límite de bytes no fijado por usuario/PDF. Propuesta 10 MiB y límites de dimensiones/decodificación; conservar 512×512 final. |
 | Textos de apelación/rechazo | PDF exige contenido y motivo de rechazo, pero no longitud máxima. Propuesta 2000 caracteres con contador. |
 | Usuario sin último acceso | Propuesta Inactivo con «Sin acceso», ordenar fechas nulas al final. No fecha inventada. |
@@ -140,8 +140,19 @@ No volver a preguntar si el entorno será local, si todos los administradores ve
 7. Actualizar estado y requisitos en estos cinco documentos; quitar «pendiente» solo con evidencia. Escribir cambios en el lugar correcto, no nuevas notas dispersas.
 8. Entregar resumen breve, rutas modificadas, comprobaciones y límites reales. Si falta algo externo, decir exactamente qué falta y qué se pudo terminar.
 
-Esta entrega es únicamente documental: sustituye once Markdown antiguos por cinco documentos consolidados. No implementa el backend, no aplica el SQL, no establece contraseñas, no cambia recursos visuales ni modifica las validaciones de la aplicación.
+La entrega documental del 25/11/2026 sustituyó once Markdown antiguos por cinco documentos consolidados. En esa entrega no se implementó el backend ni se aplicó el SQL. El alcance de la implementación posterior se detalla al final de este documento.
 
 ## Acuerdo adicional: limpieza completa del prototipo
 
 La integración incluye retirar todas las referencias visibles y comportamientos provisionales, incluso mensajes pequeños, tooltips, diálogos y PDF. Aplicar el alcance y los criterios de la sección «Retirada completa del prototipo al integrar el backend» de [01_FRONTEND.md](01_FRONTEND.md). Conservar los avisos informativos propios del simulador y el diseño aprobado. No declarar completada una función únicamente por quitar sus leyendas temporales.
+
+
+## Alcance autorizado y entregado — 26/11/2026
+El usuario autorizó implementar login, registro y cierre de sesión y actualizar el
+SQL existente listo para ejecutar completo. No pidió borrar automáticamente su base.
+Se conservaron folios, diseño, ocho tablas y datos de préstamos. Se requiere que el
+usuario reinstale su base para utilizar los hashes precargados nuevos.
+La sesión de clientes deshabilitados ya consulta sus propias apelaciones; el envío
+y resolución persistente se dejan para administración, según la delimitación previa.
+No extender esta entrega a cálculo, simulaciones o persistencia de perfiles sin
+la siguiente indicación. Las claves administrativas no se reproducen en documentación.

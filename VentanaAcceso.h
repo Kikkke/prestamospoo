@@ -1,9 +1,10 @@
 #pragma once
-
 #include <QWidget>
-
-class VentanaAcceso : public QWidget
-{
+#include <QSqlDatabase>
+#include "Acceso.h"
+class VentanaAcceso : public QWidget {
 public:
-    explicit VentanaAcceso(QWidget *parent = nullptr);
+    explicit VentanaAcceso(QSqlDatabase base, QWidget *parent=nullptr);
+private:
+    Sesion sesion;
 };

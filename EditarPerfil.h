@@ -1,5 +1,6 @@
 #pragma once
 #include "CampoNacimiento.h"
+#include "Acceso.h"
 #include "CamposNombre.h"
 #include "CampoContrasena.h"
 #include <QDialog>
@@ -25,8 +26,13 @@ inline bool editarPerfil(QWidget *padre,QString &nombre,QString &paterno,QString
     auto *acciones=new QHBoxLayout;l->addLayout(acciones);auto *cancelar=new QPushButton("Cancelar");auto *guardar=new QPushButton("Guardar cambios");guardar->setObjectName("primary");guardar->setDefault(true);cancelar->setAutoDefault(false);acciones->addWidget(cancelar);acciones->addWidget(guardar);
     QObject::connect(cancelar,&QPushButton::clicked,&d,&QDialog::reject);
     QObject::connect(guardar,&QPushButton::clicked,&d,[&](){
-        if(n->text().trimmed().size()<3||!QRegularExpression(R"(^[^\s@]+@[^\s@]+\.[^\s@]+$)").match(c->text().trimmed()).hasMatch()){error->setText("Revisa el nombre y el correo.");return;}
-        if(clave->text()!=repetir->text()){error->setText("Las contraseñas no coinciden. Revisa la confirmación.");repetir->setFocus();return;}
+        DatosRegistro datos{n->text(),ap->text(),am->text(),c->text(),clave->text(),repetir->text(),fecha->date()};
+        QString fallo=Validaciones::perfil(datos);
+        if(fallo.isEmpty() && (!datos.clave.isEmpty() || !datos.confirmacion.isEmpty())) {
+            fallo=Validaciones::clave(datos.clave);
+            if(fallo.isEmpty() && datos.clave!=datos.confirmacion) fallo="Las contraseñas no coinciden.";
+        }
+        if(!fallo.isEmpty()) {error->setText(fallo); return;}
         if(!autorizar(c->text().trimmed(),clave->text()))return;
         nombre=n->text().trimmed();paterno=ap->text().trimmed();materno=am->text().trimmed();correo=c->text().trimmed();nacimiento=fecha->date();d.accept();
     });

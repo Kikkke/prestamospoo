@@ -7,11 +7,15 @@
 #include "MarcaFinancionanti.h"
 
 #include <QLabel>
+#include <QPushButton>
+#include <QTextEdit>
+#include <QSqlQuery>
+#include <QVariant>
 #include <QFrame>
 #include <QStackedWidget>
 #include <QVBoxLayout>
 
-VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
+VentanaAcceso::VentanaAcceso(QSqlDatabase base, QWidget *parent) : QWidget(parent)
 {
     setWindowTitle(tr("FinancionantiMex — Simulador de préstamos"));
     setWindowIcon(iconoFinancionanti());
@@ -60,36 +64,69 @@ VentanaAcceso::VentanaAcceso(QWidget *parent) : QWidget(parent)
     tarjetaLayout->setContentsMargins(28, 24, 28, 24);
     tarjetaLayout->addWidget(formularios);
     fila->addWidget(tarjeta, 1);
-    auto *panel = new PanelPrincipal;
     pantallas->addWidget(acceso);
-    pantallas->addWidget(panel);
-    auto *admin = new PanelAdministrador;
-    pantallas->addWidget(admin);
-    admin->salir = [pantallas, acceso]() { pantallas->setCurrentWidget(acceso); };
-    connect(login, &PantallaLogin::administradorSolicitado, this, [admin, pantallas]() {
-        if (admin->confirmar("Acceso administrativo de demostración",true)) pantallas->setCurrentWidget(admin);
-    });
-    connect(login, &PantallaLogin::clienteDeshabilitadoSolicitado, this, [admin, pantallas, panel]() {
-        if (admin->clientes[0].habilitado) pantallas->setCurrentWidget(panel);
-        else admin->accesoCliente();
-    });
-
     auto *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setContentsMargins(0,0,0,0);
     layout->addWidget(pantallas);
 
-    connect(login, &PantallaLogin::crearCuentaSolicitada, this,
-            [formularios, registro]() { formularios->setCurrentWidget(registro); });
-    connect(registro, &PantallaRegistro::volverSolicitado, this,
-            [formularios, login]() { formularios->setCurrentWidget(login); });
-    connect(login, &PantallaLogin::inicioSolicitado, this,
-            [pantallas, panel]() { pantallas->setCurrentWidget(panel); });
-    connect(registro, &PantallaRegistro::perfilDemoCreado, panel, &PanelPrincipal::cargarPerfilDemo);
-    connect(registro, &PantallaRegistro::inicioSolicitado, this,
-            [pantallas, panel]() { pantallas->setCurrentWidget(panel); });
-    connect(panel, &PanelPrincipal::salirSolicitado, this,
-            [pantallas, acceso, formularios, login]() {
-                formularios->setCurrentWidget(login);
-                pantallas->setCurrentWidget(acceso);
-            });
+    auto salir=[=]() {
+        sesion={};
+        pantallas->setCurrentWidget(acceso);
+        while(pantallas->count()>1) {
+            auto *anterior=pantallas->widget(1);
+            pantallas->removeWidget(anterior);
+            anterior->deleteLater();
+        }
+        login->limpiar(); registro->limpiar();
+        formularios->setCurrentWidget(login);
+    };
+    auto entrar=[=](const Sesion &autenticada) {
+        if(!autenticada.valida()) return;
+        sesion=autenticada;
+        QWidget *destino=nullptr;
+        if(sesion.restringida) {
+            auto *fondo=new FondoAcceso;
+            auto *l=new QVBoxLayout(fondo);
+            l->setContentsMargins(40,40,40,40);
+            auto etiqueta=[l](const QString &t,const char *tipo) {
+                auto *label=new QLabel(t); label->setTextFormat(Qt::PlainText);
+                label->setObjectName(tipo); label->setWordWrap(true); l->addWidget(label);
+            };
+            etiqueta("Cuenta deshabilitada","title");
+            etiqueta(nombreCompleto(sesion.nombre,sesion.paterno,sesion.materno),"section");
+            etiqueta("Motivo: "+sesion.motivo+"\nFecha: "+sesion.deshabilitadaEn.toString("dd/MM/yyyy HH:mm"),"muted");
+            etiqueta("Tu acceso está restringido. Puedes consultar aquí las respuestas de tus solicitudes.","muted");
+            auto *historial=new QTextEdit; historial->setReadOnly(true); l->addWidget(historial);
+            QSqlQuery q(base);
+            q.prepare("SELECT a.creada_en,a.estado,a.mensaje,a.respuesta FROM apelacion a JOIN deshabilitacion d ON d.id=a.deshabilitacion_id WHERE d.cliente_id=:id ORDER BY a.creada_en DESC,a.id DESC");
+            q.bindValue(":id",sesion.usuarioId);
+            QStringList solicitudes;
+            if(!q.exec()) solicitudes << "No se pudieron consultar las apelaciones. Vuelve a iniciar sesión para reintentar.";
+            else while(q.next()) solicitudes << q.value(0).toDateTime().toString("dd/MM/yyyy HH:mm")+" · "+q.value(1).toString()+"\n"+q.value(2).toString()+"\n"+q.value(3).toString();
+            historial->setPlainText(solicitudes.isEmpty()?"No tienes solicitudes registradas.":solicitudes.join("\n\n"));
+            etiqueta("El envío y la resolución de apelaciones se habilitarán en la etapa de administración.","caption");
+            auto *cerrar=new QPushButton("Cerrar sesión"); l->addWidget(cerrar);
+            connect(cerrar,&QPushButton::clicked,this,salir);
+            destino=fondo;
+        } else if(sesion.rol==Rol::Administrador) {
+            auto *admin=new PanelAdministrador(base,sesion);
+            admin->salir=salir;
+            destino=admin;
+        } else {
+            auto *panel=new PanelPrincipal;
+            panel->cargarPerfilSesion(sesion.nombre,sesion.paterno,sesion.materno,sesion.correo,sesion.nacimiento);
+            connect(panel,&PanelPrincipal::salirSolicitado,this,salir);
+            destino=panel;
+        }
+        pantallas->addWidget(destino);
+        pantallas->setCurrentWidget(destino);
+    };
+    connect(login,&PantallaLogin::accesoCompletado,this,entrar);
+    connect(registro,&PantallaRegistro::accesoCompletado,this,entrar);
+    connect(login,&PantallaLogin::crearCuentaSolicitada,this,[=]() {
+        login->limpiar(); registro->limpiar(); formularios->setCurrentWidget(registro);
+    });
+    connect(registro,&PantallaRegistro::volverSolicitado,this,[=]() {
+        registro->limpiar(); login->limpiar(); formularios->setCurrentWidget(login);
+    });
 }

@@ -91,7 +91,7 @@ Carga de imágenes: assets junto al ejecutable, después carpeta fuente definida
 ### Acceso y registro
 
 Dos zonas: marca/ilustración izquierda y formulario derecha. Fondo compartido. Ventana de referencia 1180×820, mínimo actual 920×700. La tarjeta actual tiene máximo 470 px lógicos; respetar escalado Windows, no deducir medidas directamente de capturas a 125 %.
-Login conserva correo y contraseña (no nombres/apellidos para autenticarse), ojo, iniciar sesión, crear cuenta y el detalle amistoso `:)` aprobado. Los atajos Demo actuales deben retirarse al autenticar de verdad, no sirven de puertas alternativas.
+Login conserva correo y contraseña (no nombres/apellidos para autenticarse), ojo, iniciar sesión, crear cuenta y el detalle amistoso `:)` aprobado. Los atajos Demo fueron retirados: el formulario valida las credenciales reales y solicita folio solo después de verificar la contraseña administrativa.
 Registro: Nombre(s), Apellido paterno, Apellido materno, correo, nacimiento, contraseña y confirmación. Los apellidos están en **filas independientes nativas de QFormLayout**: la versión en dos columnas comprimió campos y encimó correo. No regresar a ella sin verificar su geometría.
 Scroll **solo dentro del registro** si falta altura; sin borde ni fondo adicional. No envolver login y registro completos con un scroll que agregue marcos grises o encoga el formulario. Ya se quitaron las leyendas «Empieza a explorar…» y «Acceso de demostración» del registro.
 Enlace Leer términos → diálogo con scroll vertical → al llegar abajo habilita Volver al registro. Casilla visible 20×20, borde cobre, marca XPM al aceptar, texto en dos líneas si hace falta. No marcarla automáticamente. Clic/espacio antes de completar muestra advertencia y la deja desmarcada. Crear cuenta depende de aceptación y validaciones. Restablecer estado para una nueva alta.
@@ -161,3 +161,16 @@ Acuerdo explícito del propietario, 25/11/2026: revisar **todos los textos y com
 **Criterio de finalización:** revisar cadenas del código y recorrer las pantallas de ambos roles, incluidos diálogos, errores y PDF. No debe quedar ninguna referencia de prototipo presentada al usuario en los flujos ya integrados. Las menciones históricas de esta documentación sí se conservan para explicar el punto de partida. Buscar palabras es una ayuda; comprobar su contexto evita eliminar avisos o ejemplos educativos válidos.
 
 La retirada se hace junto con la implementación real de cada función; ocultar los mensajes por sí solo no completa el backend. Esta actualización modifica únicamente documentación.
+
+
+## Integración de acceso — 26/11/2026
+Se conservan paleta, fondo, ilustración, tarjeta y controles aprobados. Login muestra
+errores y estado de verificación; los formularios se bloquean mientras procesan
+en segundo plano. Ambos apellidos son obligatorios. Contraseñas: 8–15 caracteres
+con mayúscula, minúscula, dígito y símbolo; sin espacios ni controles.
+Registro mantiene lectura hasta el final y aceptación manual, sin marcar la casilla
+automáticamente. Al completar o abandonar un flujo se limpian campos y visibilidad
+de contraseñas. Cerrar sesión destruye el panel anterior; no reutiliza sus datos.
+El acceso restringido muestra información real del cliente autenticado y consultas
+de apelaciones de su propiedad. El envío de apelaciones aún no está conectado.
+Los módulos no integrados conservan avisos explícitos de datos temporales.

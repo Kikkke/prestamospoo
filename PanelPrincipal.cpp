@@ -310,7 +310,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     connect(camara,&QPushButton::clicked,this,[this,modelo,avatar,avatarLateral](){if(editarFoto(this,modelo->foto,[](){return true;})){avatar->setFoto(modelo->foto);avatarLateral->setFoto(modelo->foto);}});
 
     auto actualizar=[modelo,nombrePerfil,correoPerfil,fechaPerfil,saludoLateral](){saludoLateral->setText("Bienvenido, "+(modelo->nombre=="Cliente de muestra"?QString("Usuario"):modelo->nombre));nombrePerfil->setText(nombreCompleto(modelo->nombre,modelo->paterno,modelo->materno));correoPerfil->setText(modelo->correo);fechaPerfil->setText(modelo->nacimiento.toString("dd/MM/yyyy"));};actualizar();
-    connect(this,&PanelPrincipal::cargarPerfilDemo,this,[modelo,actualizar,avatar,avatarLateral](const QString &nombres,const QString &paterno,const QString &materno,const QString &correo,const QDate &nacimiento){
+    connect(this,&PanelPrincipal::cargarPerfilSesion,this,[modelo,actualizar,avatar,avatarLateral](const QString &nombres,const QString &paterno,const QString &materno,const QString &correo,const QDate &nacimiento){
         modelo->nombre=nombres;modelo->paterno=paterno;modelo->materno=materno;
         modelo->correo=correo;modelo->nacimiento=nacimiento;modelo->clave.clear();modelo->foto=QPixmap();
         avatar->setFoto(modelo->foto);avatarLateral->setFoto(modelo->foto);actualizar();

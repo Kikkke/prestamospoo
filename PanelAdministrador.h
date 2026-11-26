@@ -1,5 +1,8 @@
 #pragma once
 #include "SelectorDesplegable.h"
+#include "Acceso.h"
+#include <QSqlQuery>
+#include <QVariant>
 #include "FondoAcceso.h"
 #include "MarcaFinancionanti.h"
 #include "CampoContrasena.h"
@@ -40,13 +43,21 @@ public:
     struct Sim { QString nombre; double monto; double tasa; int meses; };
     struct Cliente { QString nombre,correo; QDate ultimo; bool habilitado=true; QString motivo; QList<Sim> sims; QDate nacimiento; };
     struct Apelacion { int cliente; QString texto,estado,respuesta; QDate fecha; };
-    struct Admin { QString nombre,correo,folio; QDate nacimiento; QByteArray claveDemo; QPixmap foto; QString paterno,materno; QString completo() const {return nombreCompleto(nombre,paterno,materno);} };
+    struct Admin { QString nombre,correo,folio; QDate nacimiento; QByteArray claveDemo; QPixmap foto; QString paterno,materno; int id=0; QString completo() const {return nombreCompleto(nombre,paterno,materno);} };
     QList<Cliente> clientes;
     QList<Apelacion> apelaciones;
     QList<Admin> admins;
-    PanelAdministrador(QWidget *parent=nullptr):QWidget(parent) {
+    PanelAdministrador(QSqlDatabase base, const Sesion &sesion, QWidget *parent=nullptr):QWidget(parent),bd(base),sesionActual(sesion) {
         setObjectName("dashboard");
-        admins={{"Enrique","lopez.garfias.enrique@gmail.com","ENR310307GB34",QDate(2007,3,31),{},{},"López","Garfias"},{"Pedro","pescador.velazquez.pedro@gmail.com","PED090507XJ87",QDate(2007,5,9),{},{},"Pescador","Velázquez"},{"Uziel Alexander","uzielpime@gmail.com","UZI211207CY79",QDate(2007,12,21),{},{},"Pimentel","Ramírez"},{"Alexander","alexxaanderjimenez@gmail.com","ALE220905FQ64",QDate(2005,9,22),{},{},"Mendoza","Jiménez"},{"Christian Jared","tcrid67@gmail.com","JAR270907WW20",QDate(2007,9,27),{},{},"Castillo","Hernández"}};
+        QSqlQuery cuentas(bd);
+        if(cuentas.exec("SELECT u.id,u.nombre,u.apellido_paterno,u.apellido_materno,u.correo,u.nacimiento FROM usuario u JOIN administrador a ON a.usuario_id=u.id WHERE a.eliminado_en IS NULL")) {
+            while(cuentas.next()) {
+                Admin a; a.id=cuentas.value(0).toInt(); a.nombre=cuentas.value(1).toString();
+                a.paterno=cuentas.value(2).toString(); a.materno=cuentas.value(3).toString();
+                a.correo=cuentas.value(4).toString(); a.nacimiento=cuentas.value(5).toDate();
+                admins.append(a);
+            }
+        }
         QStringList nombres={"Ana López","Luis Pérez","María Torres","Carlos Ruiz","Sofía García","Diego Hernández"};
         for(int i=0;i<nombres.size();++i) clientes.append({nombres[i],QString("cliente%1@demo.mx").arg(i+1),QDate::currentDate().addMonths(-i*2),true,{},{{"Computadora",12000,0,3},{"Estudios",24000,12,12}},QDate(1995+i,3+i,10+i)});
         clientes[0].habilitado=false; clientes[0].motivo="Inactividad";
@@ -65,11 +76,11 @@ public:
             connect(b,&QPushButton::clicked,this,[this,s](){ if(pagina!=s) { pagina=s; render(); } });
         }
         menu->addStretch(); menu->addWidget(label("PROTOTIPO\nCambios temporales","caption"));
-        connect(button("Cerrar sesión",menu),&QPushButton::clicked,this,[this](){folioSesion.clear();if(salir)salir();});
+        connect(button("Cerrar sesión",menu),&QPushButton::clicked,this,[this](){sesionActual={};if(salir)salir();});
         raiz->addWidget(lateral);
         scroll=new QScrollArea; scroll->setWidgetResizable(true); raiz->addWidget(scroll,1); render();
     }
-    bool confirmar(const QString &accion, bool acceso=false) {
+    bool confirmar(const QString &accion) {
         QDialog d(this); d.setWindowTitle("Confirmación administrativa"); d.setMinimumWidth(430);
         auto *l=new QVBoxLayout(&d); l->addWidget(label(accion,"section"));
         l->addWidget(label("Para continuar, ingresa tu folio de administrador.","muted"));
@@ -79,36 +90,17 @@ public:
         connect(botones,&QDialogButtonBox::rejected,&d,&QDialog::reject);
         connect(ok,&QPushButton::clicked,&d,[&](){
             const QString codigo=campo->text().trimmed().toUpper();
-            if(acceso){
-                for(const auto &a:admins)if(a.folio==codigo){folioSesion=a.folio;d.accept();return;}
-                error->setText("No existe un administrador con ese folio.");
-            }else if(!folioSesion.isEmpty()&&codigo==folioSesion)d.accept();
+            if(ServicioAcceso(bd).autorizarFolio(sesionActual,codigo)) d.accept();
             else error->setText("Ingresa el folio del administrador que tiene la sesión activa.");
         });
         const bool aceptado=d.exec()==QDialog::Accepted;
-        if(aceptado&&acceso)render();
         return aceptado;
     }
-    void accesoCliente() {
-        if(clientes[0].habilitado) { QMessageBox::information(this,"Cuenta reactivada","Tu apelación fue aprobada. Tu cuenta vuelve a estar habilitada."); return; }
-        QDialog d(this); d.setWindowTitle("Cuenta deshabilitada"); d.setMinimumWidth(500);
-        auto *l=new QVBoxLayout(&d); l->addWidget(label("Cuenta deshabilitada","title"));
-        l->addWidget(label("Por razones de inactividad o uso inapropiado, tu cuenta ha sido deshabilitada. Pulsa el botón para realizar una apelación.","muted"));
-        l->addWidget(label("Cliente de muestra: Ana López\nMotivo: "+clientes[0].motivo));
-        bool pendiente=false;
-        for(const auto &a:apelaciones) if(a.cliente==0) {
-            l->addWidget(label(a.fecha.toString("dd/MM/yyyy")+" · "+a.estado+"\n"+a.respuesta,"caption"));
-            if(a.estado=="Pendiente")pendiente=true;
-        }
-        auto *texto=new QTextEdit; texto->setPlaceholderText("Explica por qué solicitas la reactivación"); texto->setMaximumHeight(140); l->addWidget(texto);
-        auto *enviar=button(pendiente?"Ya tienes una apelación pendiente":"Enviar apelación",l); enviar->setEnabled(!pendiente);
-        connect(enviar,&QPushButton::clicked,&d,[&](){if(texto->toPlainText().trimmed().isEmpty()){texto->setPlaceholderText("Escribe una explicación antes de enviar.");return;} apelaciones.append({0,texto->toPlainText().trimmed(),"Pendiente",{},QDate::currentDate()}); d.accept(); render();});
-        connect(button("Volver al acceso",l),&QPushButton::clicked,&d,&QDialog::reject); d.exec();
-    }
 private:
-    QString folioSesion="ENR310307GB34";
-    bool esSesion(int i) const {return i>=0&&i<admins.size()&&admins[i].folio==folioSesion;}
-    QString nombreSesion() const {for(const auto &a:admins)if(a.folio==folioSesion)return a.nombre;return {};}
+    QSqlDatabase bd;
+    Sesion sesionActual;
+    bool esSesion(int i) const {return i>=0 && i<admins.size() && admins[i].id==sesionActual.usuarioId;}
+    QString nombreSesion() const {return sesionActual.nombre;}
     AvatarCliente *avatarLateral;QLabel *saludoLateral;
     QScrollArea *scroll; QString pagina="Clientes";
     static QLabel *label(const QString &s,const char *tipo="") {auto *l=new QLabel(s);l->setTextFormat(Qt::PlainText);l->setWordWrap(true);l->setObjectName(tipo);return l;}
@@ -116,7 +108,7 @@ private:
     static QVBoxLayout *card(QBoxLayout *l) {auto *f=new QFrame;f->setObjectName("card");auto *c=new QVBoxLayout(f);c->setContentsMargins(20,16,20,16);c->setSpacing(12);l->addWidget(f);return c;}
     QString estado(int i) const {if(!clientes[i].habilitado)return "Deshabilitada";return clientes[i].ultimo>=QDate::currentDate().addMonths(-6)?"Activo":"Inactivo";}
     void render() {
-        for(const auto &a:admins)if(a.folio==folioSesion){avatarLateral->setFoto(a.foto);saludoLateral->setText("Bienvenido, "+a.nombre);break;}
+        for(const auto &a:admins)if(a.id==sesionActual.usuarioId){avatarLateral->setFoto(a.foto);saludoLateral->setText("Bienvenido, "+a.nombre);break;}
         auto *viejo=scroll->takeWidget(); if(viejo)viejo->deleteLater();
         auto *f=new FondoAcceso; auto *l=new QVBoxLayout(f);l->setContentsMargins(24,24,24,24);l->setSpacing(16);scroll->setWidget(f);
         l->addWidget(label("ADMINISTRACIÓN / "+pagina,"eyebrow"));l->addWidget(label(pagina,"title"));
@@ -308,10 +300,14 @@ private:
         if(esSesion(i)) connect(button("Revelar mi folio",l),&QPushButton::clicked,&d,[&,i](){
             if(!esSesion(i))return; // Solo el propietario de la sesión puede consultar su folio.
             bool ok=false;QString codigo=QInputDialog::getText(&d,"Autorización de otro administrador","Para revelar tu folio, otro administrador debe autorizar con el suyo.",QLineEdit::Password,{},&ok);
-            if(!ok)return;bool autorizado=false;
-            for(int j=0;j<admins.size();++j)if(!esSesion(j)&&j!=i&&admins[j].folio==codigo.trimmed())autorizado=true;
-            if(!autorizado){QMessageBox::warning(&d,"No autorizado","Se requiere el folio de otro administrador.");return;}
-            QMessageBox::information(&d,"Folio de "+admins[i].nombre,admins[i].folio);
+            if(!ok)return;
+            QSqlQuery autorizacion(bd);
+            autorizacion.prepare("SELECT usuario_id FROM administrador WHERE folio=:folio AND usuario_id<>:propio AND eliminado_en IS NULL");
+            autorizacion.bindValue(":folio",codigo.trimmed().toUpper()); autorizacion.bindValue(":propio",sesionActual.usuarioId);
+            if(!autorizacion.exec() || !autorizacion.next()){QMessageBox::warning(&d,"No autorizado","Se requiere el folio de otro administrador vigente.");return;}
+            QSqlQuery propio(bd);propio.prepare("SELECT folio FROM administrador WHERE usuario_id=:id AND eliminado_en IS NULL");
+            propio.bindValue(":id",sesionActual.usuarioId);
+            if(propio.exec() && propio.next()) QMessageBox::information(&d,"Tu folio",propio.value(0).toString());
         });
         connect(button("Cerrar ficha",l),&QPushButton::clicked,&d,&QDialog::accept);d.exec();
     }
@@ -330,8 +326,10 @@ private:
         connect(crear,&QPushButton::clicked,&d,[&](){
             if(clave->text()!=confirmacion->text()){error->setText("Las contraseñas no coinciden. Revisa ambos campos.");confirmacion->setFocus();return;}
             QString prefijo;for(auto c:nombre->text().normalized(QString::NormalizationForm_D).toUpper())if(c>='A'&&c<='Z'&&prefijo.size()<3)prefijo+=c;
-            if(prefijo.size()<3||!QRegularExpression("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$").match(correo->text().trimmed()).hasMatch()||clave->text().isEmpty()){error->setText("Escribe un nombre con al menos tres letras, un correo válido y una contraseña.");return;}
-            if(fecha->date().addYears(18)>QDate::currentDate()){error->setText("El administrador debe tener al menos 18 años.");return;}
+            DatosRegistro datos{nombre->text(),paterno->text(),materno->text(),correo->text(),clave->text(),confirmacion->text(),fecha->date(),true,true};
+            const QString fallo=Validaciones::registro(datos);
+            if(!fallo.isEmpty()){error->setText(fallo);return;}
+            if(prefijo.size()<3){error->setText("El nombre administrativo requiere al menos tres letras para su folio.");return;}
             for(const auto &a:admins)if(a.correo.compare(correo->text().trimmed(),Qt::CaseInsensitive)==0){error->setText("Ese correo ya está registrado.");return;}
             if(!confirmar("Crear administrador: "+nombre->text().trimmed()+" · "+correo->text().trimmed()))return;
             QString folio;bool repetido;

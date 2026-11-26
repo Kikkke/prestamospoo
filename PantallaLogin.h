@@ -1,17 +1,15 @@
 #pragma once
-
 #include <QWidget>
-
-class PantallaLogin : public QWidget
-{
+#include "Acceso.h"
+#include <functional>
+class PantallaLogin : public QWidget {
     Q_OBJECT
-
 public:
-    explicit PantallaLogin(QWidget *parent = nullptr);
-
+    explicit PantallaLogin(QWidget *parent=nullptr);
+    void limpiar() { if (restablecer) restablecer(); }
 signals:
-    void administradorSolicitado();
-    void clienteDeshabilitadoSolicitado();
-    void inicioSolicitado();
+    void accesoCompletado(const Sesion &sesion);
     void crearCuentaSolicitada();
+private:
+    std::function<void()> restablecer;
 };

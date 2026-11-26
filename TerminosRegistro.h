@@ -1,4 +1,5 @@
 #pragma once
+#include "Acceso.h"
 #include <QDialog>
 #include <QLabel>
 #include <QPushButton>
@@ -22,7 +23,7 @@ inline bool mostrarTerminos(QWidget *padre) {
     texto->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     texto->setStyleSheet("QTextBrowser { background:#1b1b20; color:#f4f4f5; border:1px solid #484248; border-radius:8px; padding:14px; }");
     texto->setHtml(QString::fromUtf8(R"TERMINOS(
-<h2>FinancionantiMex</h2><p>Versión 1 · 17 de noviembre de 2026</p>
+<h2>FinancionantiMex</h2><p>Versión %1 · 17 de noviembre de 2026</p>
 <h3>1. Finalidad del sistema</h3>
 <p>FinancionantiMex permite simular préstamos, consultar tablas de amortización, guardar simulaciones y comparar opciones de financiamiento. Los resultados son informativos y dependen de los datos ingresados. <b>No constituyen una oferta, aprobación ni garantía de obtener un préstamo.</b> El sistema no entrega dinero ni celebra contratos de crédito.</p>
 <h3>2. Registro y responsabilidad sobre la cuenta</h3>
@@ -61,7 +62,7 @@ inline bool mostrarTerminos(QWidget *padre) {
 <h3>13. Aceptación</h3>
 <p>Al aceptar, declaras haber leído y comprendido estas reglas. En particular, reconoces que <b>los administradores pueden consultar tus simulaciones, editarlas o eliminarlas por incumplimientos y deshabilitar tu cuenta</b>, y que puedes solicitar la revisión de una deshabilitación mediante una apelación.</p>
 <p><b>Fin del documento.</b> Vuelve al registro y marca la casilla si aceptas estos términos.</p>
-)TERMINOS"));
+)TERMINOS").arg(VERSION_TERMINOS));
     layout->addWidget(texto,1);
     auto *acciones=new QHBoxLayout;
     auto *cerrar=new QPushButton("Cerrar");auto *continuar=new QPushButton("Volver al registro");

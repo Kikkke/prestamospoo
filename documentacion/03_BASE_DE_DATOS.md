@@ -53,7 +53,7 @@ El diagrama permite mostrar los roles opcionales por separado; la exclusión ent
 - `password_hash` es el formato PBKDF2 descrito en 02, con sal/parámetros. NULL significa contraseña **pendiente de establecer**. No significa acceso sin contraseña. No guardar texto plano ni el hash temporal simple de la UI.
 - `foto_ruta` NULL usa el avatar de usuario existente. Una ruta futura apunta a almacenamiento gestionado por la aplicación, preferentemente relativa al directorio de datos; no al archivo original en Descargas. La imagen no se guarda como BLOB por ahora.
 - `creado_en` es creación de cuenta; `ultimo_acceso` es último login completado según política de sesión. Las semillas con NULL no han recibido una fecha inventada. Mostrar «Sin acceso».
-- `terminos_version` y `terminos_aceptados_en` guardan **la última aceptación explícita**. No existe historial de todas las versiones ni evidencia de comprensión. NULL en las semillas evita atribuirles consentimiento. El texto/versionado están en `TerminosRegistro.h`.
+- `terminos_version` y `terminos_aceptados_en` guardan **la última aceptación explícita**. No existe historial de todas las versiones ni evidencia de comprensión. Las semillas ya incluyen aceptación inicial por declaración del propietario. El texto/versionado están en `TerminosRegistro.h`.
 - `administrador.folio` se genera una sola vez, longitud 13; no cambia al editar nombre/nacimiento. En el SQL actual está legible: no afirmar que está cifrado. La aplicación no debe exponerlo en consultas normales ni en logs. El flujo de revelación propio requiere autorización de otro administrador. Este mecanismo no protege frente a quien tiene acceso root al servidor local.
 - `administrador.eliminado_en` NULL significa disponible; con fecha está dado de baja lógicamente. Conservar su usuario e IDs para apelaciones/actividad. Excluir de login y autorización.
 - `deshabilitacion.reactivada_en` NULL significa suspensión abierta. No más de una abierta por cliente. Una suspensión abierta prevalece sobre activo/inactivo. No se guarda un booleano separado que pueda contradecirla.
@@ -100,7 +100,7 @@ Secuencia de integración:
 5. Comprobar `QSqlDatabase::drivers()` y disponibilidad de `QMYSQL`. El plugin y biblioteca cliente deben ser compatibles con Qt 6.12, MinGW, arquitectura 64 bits y build empleado. No copiar DLL aleatorias ni mezclar kits. Si no está el plugin, resolver instalación/compilación compatible según entorno real.
 6. Abrir una conexión con nombre; fijar host/puerto/base/usuario/contraseña desde configuración local. Ejecutar una consulta mínima y consultar errores sin imprimir secretos.
 7. Implementar repositorios con `prepare`/`bindValue`, conexión válida en el hilo que la usa y vida útil controlada. Cerrar consultas antes de retirar una conexión.
-8. Establecer contraseñas iniciales mediante el mismo servicio PBKDF2; no existe todavía un procedimiento de bootstrap terminado. Un hash NULL nunca autentica.
+8. El script vigente ya contiene hashes PBKDF2 iniciales compatibles con Claves::verificar. No ejecutar ningún bootstrap en cada arranque. Un hash NULL nunca autentica.
 9. Conectar pantallas progresivamente, sustituir listas locales y probar persistencia tras cerrar/abrir.
 
 Usar root es la decisión local de este proyecto; no publicar/distribuir esa credencial ni convertirla en constante del ejecutable. Si más adelante se instala para terceros o en red, revisar cuenta SQL de permisos mínimos y seguridad del despliegue: eso no forma parte del alcance actual.
@@ -166,7 +166,7 @@ La unicidad de correo/folio y una sola apelación pendiente se validan en servic
 
 ## 7. Datos iniciales que se deben conservar
 
-Inventario leído del SQL vigente. Son registros iniciales de instalación; no prueban que existan sesiones, contraseñas establecidas o consentimientos reales. No rellenar esas evidencias ficticiamente.
+Inventario del SQL vigente. Son datos iniciales de instalación. El propietario declaró aceptados los términos para estas cuentas y autorizó establecer sus claves; las fechas de semilla siguen siendo convenciones del conjunto inicial.
 
 | Tabla | Filas iniciales |
 |---|---:|
@@ -204,7 +204,7 @@ Christian Jared conserva el prefijo histórico JAR; no cambiarlo a CHR al import
 Correos example.com son datos iniciales ficticios plausibles, no direcciones verificadas. No agregar un sistema de verificación por correo no solicitado. Los IDs 6–11 conservan dos préstamos individuales cada uno: Computadora 12,000 MXN/0 %/3 meses y Estudios 24,000 MXN/12 %/12 meses. No son dos registros compartidos entre todos.
 La cuenta Valeria recibe los 20 préstamos históricos y cuatro variantes adicionales del comparador. Esta asignación ya está en el SQL; el frontend antiguo no tenía un propietario persistido de esas listas. No replicar las 24 simulaciones a cada nuevo cliente.
 
-Todos `password_hash`, `foto_ruta`, `terminos_version` y `terminos_aceptados_en` comienzan NULL; los últimos accesos administrativos también. No hay contraseña admin123, folio usado como contraseña, ni claves cliente por defecto autorizadas. Acordar establecimiento inicial antes de probar login real.
+Los 12 password_hash contienen PBKDF2 con sales independientes. terminos_version es 1 y terminos_aceptados_en usa la fecha de alta de la semilla, por acuerdo del propietario de considerar aceptación previa. foto_ruta y los últimos accesos administrativos siguen NULL. Las claves administrativas fueron proporcionadas por el propietario; las de clientes fueron propuestas y aceptadas. No se incluyen claves legibles en este documento ni en el SQL.
 La referencia temporal fija del SQL es 15/11/2026 12:00:00. Son fechas precargadas de la instalación: no regenerarlas con CURRENT_TIMESTAMP en cada arranque ni afirmar que son historial de hechos reales. Algunas fechas de acceso preceden a la fecha común de creación de semilla; si se requiere coherencia histórica estricta, conciliar esas fechas al preparar datos finales, sin inventar una historia de sesiones. No es razón para bloquear el registro normal.
 Ana tiene suspensión ID1, motivo Inactividad, abierta desde esa fecha. Apelación ID1 pendiente, mismo episodio, texto: «Deseo retomar mis simulaciones y solicito reactivar mi cuenta.». No tiene respuesta ni administrador resolutor. El motivo histórico no cambia automáticamente por su último acceso precargado.
 
@@ -217,7 +217,7 @@ Ana tiene suspensión ID1, motivo Inactividad, abierta desde esa fecha. Apelaci�
 - Comparador tiene intereses precargados 794.25 para Computadora a 12 meses. Las cuotas SQL coherentes suman 794.23. Sustituir la cifra fija, no manipular cuotas para reproducirla.
 - `ActividadAdministrativa.h` genera 24 ejemplos de interfaz. No insertarlos como sucesos reales ni crear `actividad_demo` en el esquema final. Actividad inicia vacía y se alimenta de cambios ejecutados.
 - Las fotografías/ediciones hechas en una ejecución antigua no persisten. No se puede prometer recuperarlas desde SQL sin haberlas guardado.
-- No hay versiones antiguas de las cuotas ni aceptación de todos los términos del pasado. No inventar evidencias.
+- No hay versiones antiguas de cuotas ni historial de todas las versiones de términos. Solo se almacena la última aceptación.
 - Hay un nombre de simulación con paréntesis: «Curso de idiomas (10 meses sin interés)». RN-12 permite letras/números/espacios/guion bajo. **Pendiente al integrar**: renombrar a «Curso de idiomas 10 meses sin interés» preservando ID y condiciones. Esta tarea de documentación no modifica ese INSERT.
 
 ## 9. Verificación y pendientes de BD
@@ -228,7 +228,7 @@ Antes de declarar integración terminada:
 
 - Verificar instalación MySQL, codificación, motor transaccional y QMYSQL.
 - Ejecutar instalación en entorno de pruebas y contrastar conteos/secuencias/sumas sin añadir consultas extra al instalador que el usuario pidió sencillo.
-- Establecer credenciales con PBKDF2 y resolver aceptación inicial de términos sin marcar consentimiento de oficio.
+- Credenciales y aceptación inicial resueltas en los INSERT por autorización expresa; conservar la aceptación manual para nuevas cuentas.
 - Probar errores SQL y rollback, doble envío, borrado lógico, no acceso a registros ajenos, conservación de referencias tras baja de admin y vista de todas las acciones por todos los administradores.
 - Confirmar fotos/ediciones después de reiniciar; perfil y saludo deben pertenecer a la sesión real.
 - Corregir nombre incompatible de semilla y límites funcionales del código; retirar texto de demostración solo al sustituir sus datos/operaciones.
@@ -280,7 +280,7 @@ ID de propietario corresponde a usuario/cliente en sección 7. Importes MXN; tas
 
 ## Anexo B. DDL actual de referencia
 
-Huella SHA-256 del archivo SQL completo revisado: `6d9151dcf9ec02bce35b7e69b2fabd220195af99a0f1a4a7c7763f4a3e564644`. Incluye el esquema y los INSERT; no significa que haya sido ejecutado en MySQL.
+Huella SHA-256 del archivo SQL completo revisado: `be85d2eab45ce40480e7018e054c719384d5ec9060b2557859103c1d0bba697c`. Incluye el esquema y los INSERT; no significa que haya sido ejecutado en MySQL.
 
 ```sql
 -- Esquema simplificado para FinancionantiMex. Instalación nueva; no migra una BD existente.
@@ -372,3 +372,51 @@ CREATE TABLE actividad_administrativa (
 ## Anexo C. Receta para comprobar los INSERT
 
 En una base de pruebas, contar las ocho tablas y contrastar la sección 7; verificar rol exclusivo y propietarios; para cada simulación recuperar cuotas ordenadas, comprobar número consecutivo 1..meses, capital/interés no negativos, suma capital=monto, saldo final=0 y total=monto+suma intereses. Comparar con anexo A. Estas comprobaciones pertenecen a pruebas/diagnóstico, no se añaden al instalador sencillo. No ejecutar el script histórico ni volver a insertar estos datos al iniciar sesión.
+
+## Conexión implementada — 25/11/2026
+Se añadió ConexionBD (Qt SQL, conexión nombrada con cierre al salir). main abre
+financionantimex y comprueba SELECT COUNT(*) FROM usuario antes de mostrar acceso.
+Un error detiene el arranque con mensaje; no se ejecuta el instalador SQL.
+En la entrega del 25/11 solo se conectó MySQL. La actualización del 26/11, descrita abajo, implementa autenticación y registro.
+
+Configuración privada: conexion.local.ini, grupo mysql, campos host, puerto, base,
+usuario y clave. Está excluida de Git y contiene la clave local en texto plano.
+Se busca FINANCIONANTI_CONFIG, después junto al ejecutable y finalmente en la
+carpeta fuente local. No compartir ese archivo. La variable explícita no usa fallback.
+
+QMYSQL fue compilado desde qt/qtbase v6.12.0, commit
+025bdad181de241e81bf853c8a2d7bf3d19261a9, con MinGW 15.1 y libmysql de Server 8.0.
+runtime/ (local, excluido de Git) contiene sqldrivers/qsqlmysql.dll, libmysql.dll,
+libssl-3-x64.dll y libcrypto-3-x64.dll. CMake copia ese contenido al ejecutable.
+En otro equipo hay que preparar esas dependencias compatibles y su configuración.
+Fuentes y build auxiliares: build-qmysql-src y build-qmysql. Se desactivaron
+sql_sqlite y sql_odbc; el comando windres generado requirió retirar $INCLUDES
+por el manejo de espacios de rutas en su preprocesador. No se modificó Qt global.
+
+Verificación: compilación correcta y ejecución --comprobar-bd con salida 0:
+“Conexion MySQL y lectura de usuario correctas.” La primera ejecución aislada
+falló con 2003; fuera del aislamiento la consulta fue correcta.
+Esto prueba conexión y lectura, no una auditoría completa del esquema ni escrituras.
+
+
+## Instalación lista para ejecutar — 26/11/2026
+Abrir bd/Financionanti.sql en Workbench y ejecutar el archivo completo sobre una
+instancia donde financionantimex no exista. El propietario acordó borrar primero
+su base anterior. El script no incluye DROP DATABASE ni UPDATE posteriores:
+CREATE DATABASE, USE, ocho tablas e INSERT con hashes/términos incluidos.
+Conservar los 36 préstamos y 619 cuotas originales. Ninguna reinstalación automática.
+
+Se instaló el archivo completo en una base MySQL separada, cambiando únicamente
+su nombre para las pruebas. Se verificaron ocho tablas InnoDB, conteos, hashes y
+operaciones de registro/login. La base real financionantimex no fue borrada ni
+actualizada por esta entrega; falta que el propietario ejecute el script allí.
+Los registros creados por las pruebas quedan solo en la base separada.
+
+Los hashes iniciales fueron generados con PBKDF2 estándar y comprobados con la
+implementación Qt de la aplicación para las 12 contraseñas. Las sales son diferentes.
+No se requiere establecer contraseñas manualmente después de ejecutar el instalador.
+
+La compilación Debug que usa Qt Creator también terminó correctamente y pasó
+--comprobar-bd con código 0. El kit MinGW instalado utiliza las bibliotecas Qt
+Release; el mismo controlador local QMYSQL funciona en esta configuración Debug.
+No hace falta sustituir los plugins de la instalación global de Qt.

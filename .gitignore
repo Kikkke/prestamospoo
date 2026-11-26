@@ -1,3 +1,6 @@
 build*/
 *.user
 .qt/
+
+conexion.local.ini
+runtime/

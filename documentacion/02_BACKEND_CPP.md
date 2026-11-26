@@ -1,7 +1,7 @@
 # Backend C++ — contrato de implementación y validación
 
 Fecha: 25/11/2026. Alcance local, no API web. Referencias: [00](00_SISTEMA_Y_REQUERIMIENTOS.md), [frontend](01_FRONTEND.md), [SQL](03_BASE_DE_DATOS.md), [acuerdos](04_ACUERDOS_DE_TRABAJO.md).
-Este archivo especifica trabajo pendiente. No afirmar que sus clases/servicios ya existen. Las correcciones aprobadas en 00 prevalecen sobre el texto original del PDF.
+Este archivo distingue el contrato futuro de la entrega de acceso implementada al final. Acceso.h/.cpp contiene ya validadores, PBKDF2, Sesion y ServicioAcceso; el resto de servicios sigue pendiente. Las correcciones aprobadas en 00 prevalecen sobre el texto original del PDF.
 
 ## 1. Organización de código propuesta
 
@@ -72,10 +72,10 @@ Fuentes técnicas: [Qt QPasswordDigestor](https://doc.qt.io/qt-6/qpassworddigest
 |---|---|
 | Nombre(s)/apellidos | Letras Unicode y espacios; admitir acentos y ñ. Rechazar números, guiones y signos conforme RN-08. Recortar espacios externos y normalizar espacios internos; no convertir a ASCII el nombre visible. |
 | Longitudes | No sobrepasar SQL: nombres 120, cada apellido 80, correo 254. El PDF no fija mínimo 3 para nombres: no generalizar la validación temporal de EditarPerfil. |
-| Campos obligatorios | Nombre y apellido paterno deben existir. El PDF no aclara casos sin apellido materno: propuesta permitirlo vacío/NULL para personas que no lo tienen; confirmar antes de imponer obligatoriedad a todos. Las semillas actuales tienen apellidos completos. |
+| Campos obligatorios | Nombre, apellido paterno y apellido materno son obligatorios por confirmación expresa del propietario. La regla se comparte entre alta y edición. |
 | Correo | Formato válido, sin espacios exteriores, no duplicado entre clientes y administradores. Política propuesta comparar sin distinguir mayúsculas, también al editar excluyendo el ID propio. Una regex no verifica propiedad o entrega; no agregar verificación por correo no solicitada. |
 | Nacimiento | Fecha válida, no futura, al menos 18 años cumplidos usando fecha local; aplicar en alta y edición. Documentar y probar cumpleaños y 29 de febrero. No guardar edad. |
-| Contraseña | 8–15 caracteres, al menos mayúscula, minúscula, número y carácter especial (RN-10/RF-19). No recortar ni alterar. Confirmación exacta. La política de qué espacios/signos cuentan como especial no está definida: propuesta especial no alfanumérico y no espacio, y rechazar saltos de línea/caracteres de control. |
+| Contraseña | 8–15 caracteres, al menos mayúscula, minúscula, número y carácter especial (RN-10/RF-19). No recortar ni alterar. Confirmación exacta. Política implementada: símbolo no alfanumérico ni marca combinante; se rechazan espacios y caracteres no imprimibles. |
 | Edición sin clave | Ambos campos de clave vacíos conserva hash actual. Uno lleno o distintos → error. Nunca borrar el hash por dejar campos vacíos. |
 | Unicidad | Backend comprueba correo/folio; no confiar en índices UNIQUE porque usuario pidió SQL sin ellos. Resolver dentro de operación serializada/transacción en la aplicación local. No prometer unicidad frente a escritores SQL externos. |
 
@@ -100,7 +100,7 @@ Tras éxito, mantener la navegación aprobada al inicio con sesión real (alta f
 ### Aceptación
 Fuente de texto actual TerminosRegistro.h, v1 de 17/11/2026. Una constante compartida debe identificar la misma versión en UI y BD. Abrir modal no cuenta como aceptación; llegar al final habilita retorno, pero la casilla la marca el usuario. Pulsarla antes debe advertir sin marcar y también funcionar con barra espaciadora. Crear cuenta comprueba flag de recorrido + casilla, además de controles visibles.
 Al cerrar antes del final no habilitar. Si el contenido cabe entero, está visible completo y se puede habilitar. No usar temporizador que marque aceptación sin acción. Reiniciar flags para nueva alta/cambio de versión. El almacenamiento solo conserva la última versión y fecha: no hay tabla histórica de aceptaciones.
-Las semillas tienen aceptación NULL; no atribuir una fecha inventada. Propuesta pendiente: al iniciar por primera vez una cuenta precargada, pedir aceptación vigente antes de habilitar módulos, sin obligar a recrear la cuenta.
+Por instrucción posterior del propietario, las 12 semillas tienen aceptación inicial de versión 1 en sus INSERT. No se les pide aceptarla al iniciar. Las nuevas cuentas la aceptan manualmente al registrarse.
 
 Contenido aprobado que debe preservarse al integrar: naturaleza informativa; cuenta personal y mayoría de edad; datos veraces; prohibición de contenido obsceno, amenazas, discriminación, suplantación y usos ilícitos; acceso administrativo a datos/simulaciones; edición/eliminación administrativa justificada y registrada; suspensión y apelación; inactividad sin bloqueo automático; privacidad; PDF sin carácter contractual; actividad accesible a todos los administradores y actualización de términos. No agregar un chat de soporte. Los PDF ya descargados no desaparecen al eliminar lógicamente el registro. El texto existente menciona un aviso de privacidad independiente: dicho aviso no está implementado ni redactado aquí y no debe darse por cubierto con la casilla de términos.
 
@@ -232,8 +232,55 @@ Fase 6: retirar constantes de prototipo, leyendas, catálogos paralelos y acceso
 | Inyección en búsquedas y textos SQL | Tratada como dato; sin ejecutar instrucciones |
 | MySQL caído y reabrir aplicación | Error claro; no pérdida silenciosa ni retorno a muestras |
 
-Los límites de archivos/textos propuestos y comportamiento de cuentas semilla sin términos necesitan confirmación cuando se implemente; no bloquean la documentación. No afirmar que estas pruebas ya se ejecutaron: son criterios de aceptación del backend futuro.
+Los límites de archivos/textos propuestos necesitan confirmación cuando se implementen. Las cuentas semilla ya tienen términos aceptados por decisión del propietario. No afirmar que estas pruebas ya se ejecutaron: son criterios de aceptación del backend futuro.
 
 ## Acuerdo adicional: limpieza completa del prototipo
 
 La integración incluye retirar todas las referencias visibles y comportamientos provisionales, incluso mensajes pequeños, tooltips, diálogos y PDF. Aplicar el alcance y los criterios de la sección «Retirada completa del prototipo al integrar el backend» de [01_FRONTEND.md](01_FRONTEND.md). Conservar los avisos informativos propios del simulador y el diseño aprobado. No declarar completada una función únicamente por quitar sus leyendas temporales.
+
+
+## Implementación de acceso — 26/11/2026
+- Acceso.h/.cpp: DatosRegistro, Sesion (ID, rol, identidad, suspensión),
+  ResultadoAcceso, Validaciones, Claves y ServicioAcceso.
+- Hash: PBKDF2-HMAC-SHA-256, 600000 iteraciones, sal de 16 bytes del generador
+  del sistema y salida de 32 bytes. Verificación de formato y longitudes; comparación
+  de todos los bytes sin salida temprana. Formatos desconocidos/NULL se rechazan.
+- Las operaciones usan prepare/bindValue. Registro guarda usuario/cliente/términos
+  y último acceso en una transacción. Un bloqueo nombrado MySQL (GET_LOCK por base)
+  serializa altas entre procesos cooperantes; no protege contra SQL externo arbitrario.
+- Login devuelve requiereFolio sin sesión tras verificar un administrador. Al enviar
+  el folio vuelve a verificar las credenciales y el rol vigente. Solo después se
+  actualiza último acceso. Una cuenta con ambos roles, sin rol o administrador
+  eliminado se rechaza. La suspensión no cambia último acceso operativo.
+- TareaAcceso ejecuta SQL y PBKDF2 en QtConcurrent con una ConexionBD propia del
+  hilo. QFutureWatcher entrega el resultado a la ventana; los widgets nunca se
+  manipulan desde el trabajador. Al terminar la app se espera a los trabajos.
+- VentanaAcceso crea un panel nuevo por sesión y lo retira al salir. El panel cliente
+  recibe su identidad real; la sesión administrativa usa ID y valida el folio en BD.
+  Los cambios de perfil/gestión siguen temporales y no cambian claves persistidas.
+- No se implementó un servicio web ni una jerarquía artificial de tipos de interés.
+
+Pruebas automatizadas: pruebas/PruebasAcceso.cpp, activadas por PROBAR_ACCESO=ON.
+Se ejecutan únicamente en financionantimex_pruebas_acceso_20261126, con configuración
+FINANCIONANTI_CONFIG y claves de prueba locales excluidas de Git. Necesitan instalación
+fresca del SQL para la suite completa. Cubren las 12 claves, reglas de campos, salts,
+errores de folio, suspensión, duplicados, rollback forzado mediante trigger de prueba,
+roles inválidos, persistencia entre conexiones, términos y navegación/cierre.
+Los triggers y cambios de diagnóstico pertenecen exclusivamente a esa base de pruebas,
+no al instalador entregado ni a la base real.
+
+Resultado comprobado el 26/11/2026: ocho casos de la suite y un caso adicional del
+diálogo administrativo pasaron sin fallos (más inicialización y cierre de QtTest).
+El caso adicional verifica cancelar, rechazar folio incorrecto y acceder como Pedro
+con su propio folio, sin actualizar último acceso en los intentos incompletos.
+Se revisaron capturas de ventanas reales de login, registro, acceso restringido y
+panel administrativo. Los informes y capturas quedan en build-codex, fuera de Git.
+
+Validación de correo: regla compartida en Validaciones::correo, aplicada antes del
+registro y al abandonar el campo. Comprueba formato, longitudes total/local/dominio
+y conserva la comprobación de duplicados en MySQL. No verifica propiedad del buzón.
+
+Registro: nombre(s), apellido paterno y apellido materno admiten hasta 40 caracteres
+por campo. Los campos impiden introducir números y símbolos; permiten letras Unicode
+(incluidas ñ y vocales acentuadas) y espacios. El servicio también comprueba el límite
+y rechaza campos vacíos o compuestos únicamente por espacios.

@@ -36,7 +36,7 @@ Raíz local conocida: `C:/Users/kikkk/OneDrive/Documentos/1UPIICSA/TERCER SEMEST
 - `tmp/`, carpetas de build: artefactos auxiliares, no fuente de verdad.
 - Los DOCX/PDF de contexto anteriores en la raíz son históricos; las decisiones posteriores aquí prevalecen.
 
-Qt conocido: 6.12.0 MinGW 64-bit, compilador MinGW 15.1. CMake requiere C++17, AUTOMOC/AUTORCC y actualmente solo Widgets. Herramientas locales: `C:/Qt/Tools/CMake_64/bin/cmake.exe`, `C:/Qt/Tools/mingw1510_64/bin`, `C:/Qt/Tools/Ninja`, Qt en `C:/Qt/6.12.0/mingw_64`.
+Qt conocido: 6.12.0 MinGW 64-bit, compilador MinGW 15.1. CMake requiere C++17, AUTOMOC/AUTORCC y los módulos Widgets, Sql, Network y Concurrent. Herramientas locales: `C:/Qt/Tools/CMake_64/bin/cmake.exe`, `C:/Qt/Tools/mingw1510_64/bin`, `C:/Qt/Tools/Ninja`, Qt en `C:/Qt/6.12.0/mingw_64`.
 Abrir `aplicacion-cpp/CMakeLists.txt` en Qt Creator, elegir kit compatible, configurar y ejecutar Ctrl+R. No mezclar MinGW de otra versión ni DLL de otra instalación de Qt. Para compilar en terminal, anteponer MinGW y Ninja al PATH y ejecutar `cmake --build aplicacion-cpp/build-codex` si ese build ya está configurado. Un equipo nuevo debe configurar su propia carpeta de build.
 No terminar el proceso de la aplicación del usuario sin avisar; para pruebas usar build separado. La compilación no equivale a validación visual ni a prueba de persistencia.
 
@@ -45,17 +45,17 @@ No terminar el proceso de la aplicación del usuario sin avisar; para pruebas us
 | Área | Existe ahora | Pendiente para funcionamiento definitivo |
 |---|---|---|
 | Interfaz | Tema, navegación, formularios, tarjetas, filtros, fotos, ayuda | Mantener diseño y corregir solo defectos necesarios durante integración |
-| Login | Navegación directa y accesos de demostración | Verificación correo/contraseña, estado, rol y folio; sesión por ID |
-| Registro | Campos separados, calendario, confirmación, términos con desplazamiento y advertencia | Validación completa, alta SQL y aceptación persistida |
+| Login | Autenticación MySQL/PBKDF2, folio de la cuenta, rol, suspensión y cierre de sesión por ID | Integrar autorización y persistencia de los módulos restantes |
+| Registro | Validación compartida, ambos apellidos obligatorios, términos manuales y alta transaccional usuario + cliente | Sin pendientes de este flujo en el alcance acordado |
 | Inicio | Formulario y resultados fijos; calcular/guardar deshabilitados | Cálculo real, invalidar resultados editados y guardado atómico |
 | Historial | 20 registros locales, búsqueda, iconos, borrado temporal | Consulta del propietario y eliminación lógica SQL |
 | Amortización/PDF | Cálculo local de condiciones de la fila y PDF multipágina | Consultar cuotas guardadas coherentes y fechas reales |
 | Comparador | Seis opciones y resultados precargados independientes | Usar historial del propietario y eliminar resultados hardcodeados |
-| Mi cuenta/fotos | Datos y recortes temporales en memoria | Validaciones compartidas y persistencia; refrescar todas las vistas |
-| Administración | Clientes, administradores, apelaciones, folio y cambios temporales | Autorizar por sesión real, transacciones y auditoría real |
+| Mi cuenta/fotos | Identidad de la sesión real; edición y recortes temporales | Persistir ediciones y fotos; refrescar todas las vistas |
+| Administración | Sesión real y folio contra BD; directorio de administradores desde SQL; gestión todavía temporal | Persistir cambios, clientes, apelaciones y auditoría |
 | Actividad | 24 ejemplos locales y filtros/paginación | Registrar operaciones realizadas y leer SQL |
-| Base de datos | Script de ocho tablas y registros iniciales | Ejecución en MySQL y conexión Qt SQL aún no comprobadas |
-| Contraseñas | Algunas ediciones usan SHA-256 simple temporal | Reemplazar por PBKDF2-HMAC-SHA-256; no migrar ese hash como definitivo |
+| Base de datos | QMYSQL verificado y script completo instalado en MySQL de pruebas | El propietario recreará su base con el script actualizado |
+| Contraseñas | Login, registro y semillas usan PBKDF2-HMAC-SHA-256 | Integrar cambio persistente de contraseña en perfil/administración |
 
 El frontend está **aprobado visualmente**, no terminado funcionalmente. La memoria temporal, textos «demo», perfiles independientes y botones deshabilitados deben retirarse al sustituirlos por operaciones reales. No limitarse a ocultar etiquetas para declarar terminado el backend.
 
@@ -109,8 +109,8 @@ El PDF tiene un único RNF. Los criterios adicionales de pruebas, legibilidad, e
 ## 8. Cómo empezar el backend
 
 1. Leer 03, verificar MySQL local y QMYSQL; hacer conexión y consulta mínima en base de pruebas.
-2. Implementar validadores, repositorios, sesiones y PBKDF2. Definir contraseñas iniciales sin inventarlas.
-3. Conectar registro/login/perfil antes de adjudicar datos al usuario.
+2. Validadores, sesiones, PBKDF2 y credenciales iniciales ya implementados (26/11/2026); ver 02/03.
+3. Registro/login conectados; continuar con perfil y fotos persistentes.
 4. Extraer motor de amortización, probarlo, conectar guardar/historial/PDF/comparador.
 5. Conectar administración, apelaciones y actividad en transacciones.
 6. Retirar flujos temporales, actualizar ayuda y leyendas, probar reinicio y todas las rutas por rol.
@@ -796,3 +796,23 @@ ejecución de instrucciones SQL no autorizadas.
 ## Acuerdo adicional: limpieza completa del prototipo
 
 La integración incluye retirar todas las referencias visibles y comportamientos provisionales, incluso mensajes pequeños, tooltips, diálogos y PDF. Aplicar el alcance y los criterios de la sección «Retirada completa del prototipo al integrar el backend» de [01_FRONTEND.md](01_FRONTEND.md). Conservar los avisos informativos propios del simulador y el diseño aprobado. No declarar completada una función únicamente por quitar sus leyendas temporales.
+
+### Avance 25/11/2026: conexión local
+ConexionBD y Qt SQL ya abren MySQL y consultan usuario al arrancar.
+QMYSQL compilado y prueba --comprobar-bd satisfactoria (salida 0).
+Detalles de configuración y dependencias locales en 03. Los módulos de interfaz
+siguen usando datos temporales; autenticación y persistencia funcional pendientes.
+
+
+## Entrega de acceso — 26/11/2026
+Implementado el registro, login y cierre de sesión. El administrador aporta correo,
+contraseña y después su propio folio. Cancelar o fallar no establece sesión ni
+actualiza último acceso. Cliente suspendido consulta únicamente su motivo, fecha
+y apelaciones existentes; el envío/resolución se implementará con administración.
+
+Las 12 cuentas iniciales se consideran con términos aceptados por instrucción
+expresa del propietario. Los cinco administradores usan las claves que proporcionó;
+los siete clientes usan las claves propuestas y aceptadas en el chat. Solo se
+incluyen hashes con sal en los INSERT. El propietario ejecutará el SQL completo
+tras eliminar su base anterior; el programa no la borra ni reinstala al arrancar.
+No confundir esta entrega con la integración del simulador o de la gestión.

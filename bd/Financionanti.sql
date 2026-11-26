@@ -1,6 +1,5 @@
 -- Esquema simplificado para FinancionantiMex. Instalación nueva; no migra una BD existente.
 -- Validaciones de negocio a cargo del backend.
-
 CREATE DATABASE financionantimex;
 USE financionantimex;
 CREATE TABLE usuario (
@@ -82,23 +81,24 @@ CREATE TABLE actividad_administrativa (
  FOREIGN KEY(administrador_id) REFERENCES administrador(usuario_id),
  FOREIGN KEY(autorizador_id) REFERENCES administrador(usuario_id)
 );
--- Las contraseñas se establecerán mediante el backend.
+-- Contraseñas iniciales protegidas con PBKDF2-HMAC-SHA-256 (600000 iteraciones).
 -- La última aceptación se guarda en usuario. El texto de términos está en la aplicación.
--- La aceptación y la actividad se registran al realizarse; no se precargan.
+-- Por acuerdo del propietario, las 12 cuentas iniciales ya aceptaron la versión 1.
+-- Su aceptación inicial usa la fecha de alta de la semilla; la actividad inicia vacía.
 
-INSERT INTO usuario(id,nombre,apellido_paterno,apellido_materno,correo,nacimiento,ultimo_acceso,creado_en) VALUES
-(1,'Enrique','López','Garfias','lopez.garfias.enrique@gmail.com','2007-03-31',NULL,'2026-11-15 12:00:00'),
-(2,'Pedro','Pescador','Velázquez','pescador.velazquez.pedro@gmail.com','2007-05-09',NULL,'2026-11-15 12:00:00'),
-(3,'Uziel Alexander','Pimentel','Ramírez','uzielpime@gmail.com','2007-12-21',NULL,'2026-11-15 12:00:00'),
-(4,'Alexander','Mendoza','Jiménez','alexxaanderjimenez@gmail.com','2005-09-22',NULL,'2026-11-15 12:00:00'),
-(5,'Christian Jared','Castillo','Hernández','tcrid67@gmail.com','2007-09-27',NULL,'2026-11-15 12:00:00'),
-(6,'Ana','López','Martínez','ana.lopez@example.com','1995-03-10','2026-11-15 12:00:00','2026-11-15 12:00:00'),
-(7,'Luis','Pérez','Sánchez','luis.perez@example.com','1996-04-11','2026-09-15 12:00:00','2026-11-15 12:00:00'),
-(8,'María','Torres','Flores','maria.torres@example.com','1997-05-12','2026-07-15 12:00:00','2026-11-15 12:00:00'),
-(9,'Carlos','Ruiz','Morales','carlos.ruiz@example.com','1998-06-13','2026-05-15 12:00:00','2026-11-15 12:00:00'),
-(10,'Sofía','García','Vargas','sofia.garcia@example.com','1999-07-14','2026-03-15 12:00:00','2026-11-15 12:00:00'),
-(11,'Diego','Hernández','Castro','diego.hernandez@example.com','2000-08-15','2026-01-15 12:00:00','2026-11-15 12:00:00'),
-(12,'Valeria','Ramírez','Mendoza','valeria.ramirez@example.com','2000-01-01',NULL,'2026-11-15 12:00:00');
+INSERT INTO usuario(id,nombre,apellido_paterno,apellido_materno,correo,nacimiento,ultimo_acceso,creado_en,password_hash,terminos_version,terminos_aceptados_en) VALUES
+(1,'Enrique','López','Garfias','lopez.garfias.enrique@gmail.com','2007-03-31',NULL,'2026-11-15 12:00:00','pbkdf2-sha256$600000$wDMGM7AqtPiuYzXhie4Eyw==$r5sRPdSP/N4u8TRvmRAutZ6aajQXkdEoo2I+bFxuBss=','1','2026-11-15 12:00:00'),
+(2,'Pedro','Pescador','Velázquez','pescador.velazquez.pedro@gmail.com','2007-05-09',NULL,'2026-11-15 12:00:00','pbkdf2-sha256$600000$dpswzJ5G37JmylP/g/5LwA==$dxreyMEvRcAPYp+9RuKPRB6DFD+5gSGX+SbiweJWVvU=','1','2026-11-15 12:00:00'),
+(3,'Uziel Alexander','Pimentel','Ramírez','uzielpime@gmail.com','2007-12-21',NULL,'2026-11-15 12:00:00','pbkdf2-sha256$600000$AAjeUxIkbHv1EM4oJyvtrQ==$AQyC9ly8LuQ56tSKRrvZBbCdS29Qrr3ZBLodzjR8rDQ=','1','2026-11-15 12:00:00'),
+(4,'Alexander','Mendoza','Jiménez','alexxaanderjimenez@gmail.com','2005-09-22',NULL,'2026-11-15 12:00:00','pbkdf2-sha256$600000$r/Meovxm92dJGMVQ4cmQDg==$ufXkxn3m/+tvawSsoehxddjk5nngjlzbC3UIQ64TQAA=','1','2026-11-15 12:00:00'),
+(5,'Christian Jared','Castillo','Hernández','tcrid67@gmail.com','2007-09-27',NULL,'2026-11-15 12:00:00','pbkdf2-sha256$600000$GTQlOdNL/Ui3Gx69zHTLFg==$2UnyIrpxW+J+BIM9cP+X7HYsuV3X5FuoV1IHH34+XfU=','1','2026-11-15 12:00:00'),
+(6,'Ana','López','Martínez','ana.lopez@example.com','1995-03-10','2026-11-15 12:00:00','2026-11-15 12:00:00','pbkdf2-sha256$600000$XHowfKmn3aG0cML7+GCU8w==$QjDO4dUTsIviXdk4tGQ5wd5I655tuhLpM4oaHiyARxk=','1','2026-11-15 12:00:00'),
+(7,'Luis','Pérez','Sánchez','luis.perez@example.com','1996-04-11','2026-09-15 12:00:00','2026-11-15 12:00:00','pbkdf2-sha256$600000$wTONo65xtncNpuPCIhoOGg==$IjGPAH2GzxwCyVLNXF4plWAx7Euu/YaTYCfIaT5cxFE=','1','2026-11-15 12:00:00'),
+(8,'María','Torres','Flores','maria.torres@example.com','1997-05-12','2026-07-15 12:00:00','2026-11-15 12:00:00','pbkdf2-sha256$600000$oyzHF2TyjgoUeFlXoxTw3A==$1vbSN1piuyOR4QqPiNsqHjzVJibCs0cQh+/mvJhwKew=','1','2026-11-15 12:00:00'),
+(9,'Carlos','Ruiz','Morales','carlos.ruiz@example.com','1998-06-13','2026-05-15 12:00:00','2026-11-15 12:00:00','pbkdf2-sha256$600000$GrpOLcG58C1PhKIcPy1l6g==$BmnF09Ld2OUQ43mQDjSUYB9EAvaPl4ynIVPJcIXHT/U=','1','2026-11-15 12:00:00'),
+(10,'Sofía','García','Vargas','sofia.garcia@example.com','1999-07-14','2026-03-15 12:00:00','2026-11-15 12:00:00','pbkdf2-sha256$600000$KMbgjWnjXzHZ3JkYdNBMqA==$VprPbjb8Wed0oIpg5PktH2CCvdiqZ9ksnMrBJk5Bnh4=','1','2026-11-15 12:00:00'),
+(11,'Diego','Hernández','Castro','diego.hernandez@example.com','2000-08-15','2026-01-15 12:00:00','2026-11-15 12:00:00','pbkdf2-sha256$600000$KkqWTNT/AWF8nko/jnMVmw==$nqmQvEu34jXkTPg5S4jqi/0YlltkVmooxNGdOusrk7M=','1','2026-11-15 12:00:00'),
+(12,'Valeria','Ramírez','Mendoza','valeria.ramirez@example.com','2000-01-01',NULL,'2026-11-15 12:00:00','pbkdf2-sha256$600000$v/WcE2V98TeZ806YvY1I3w==$BErbcSvFSQpr0YJeTSTL1hBEu6nat1WxNOVAug12SdY=','1','2026-11-15 12:00:00');
 INSERT INTO administrador(usuario_id,folio) VALUES
 (1,'ENR310307GB34'),
 (2,'PED090507XJ87'),

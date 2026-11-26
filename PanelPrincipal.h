@@ -9,5 +9,5 @@ public:
     explicit PanelPrincipal(QWidget *parent = nullptr);
 signals:
     void salirSolicitado();
-    void cargarPerfilDemo(const QString &nombres, const QString &paterno, const QString &materno, const QString &correo, const QDate &nacimiento);
+    void cargarPerfilSesion(const QString &nombres, const QString &paterno, const QString &materno, const QString &correo, const QDate &nacimiento);
 };
