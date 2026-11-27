@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QSqlDatabase>
 #include <QString>
+#include <QImage>
 
 inline const QString VERSION_TERMINOS = QStringLiteral("1");
 
@@ -16,7 +17,7 @@ enum class Rol { Ninguno, Cliente, Administrador };
 struct Sesion {
     int usuarioId = 0;
     Rol rol = Rol::Ninguno;
-    QString nombre, paterno, materno, correo;
+    QString nombre, paterno, materno, correo, fotoRuta;
     QDate nacimiento;
     bool restringida = false;
     QString motivo;
@@ -49,6 +50,8 @@ public:
     ResultadoAcceso registrar(const DatosRegistro &datos);
     ResultadoAcceso ingresar(const QString &correo, const QString &clave,
                              const QString &folio = {});
+    ResultadoAcceso actualizarPerfil(const Sesion &, const DatosRegistro &, const QString &actual);
+    ResultadoAcceso guardarFoto(const Sesion &, const QImage &);
     bool autorizarFolio(const Sesion &sesion, const QString &folio);
 private:
     QSqlDatabase bd;

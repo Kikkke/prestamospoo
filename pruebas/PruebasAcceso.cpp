@@ -1,4 +1,5 @@
 #include "Acceso.h"
+#include "EditarPerfil.h"
 #include "ConexionBD.h"
 #include "PantallaLogin.h"
 #include "PantallaRegistro.h"
@@ -23,6 +24,8 @@
 #include <QDialog>
 #include <QInputDialog>
 #include <memory>
+#include <QStandardPaths>
+#include <QFileInfo>
 
 class PruebasAcceso : public QObject {
     Q_OBJECT
@@ -43,6 +46,7 @@ class PruebasAcceso : public QObject {
     }
 private slots:
     void initTestCase() {
+        QStandardPaths::setTestModeEnabled(true);
         qApp->setStyle(new EstiloSelectores);
         qApp->setStyleSheet(temaOscuro());
         qRegisterMetaType<Sesion>();
@@ -235,6 +239,70 @@ private slots:
         QVERIFY(login->isVisible());QVERIFY(!boton(w,"Cerrar sesión"));
         boton(*login,"Crear cuenta")->click();QTest::qWait(100);
         w.grab().save(QCoreApplication::applicationDirPath()+"/registro-verificado.png");
+    }
+    void perfilPersistente() {
+        ServicioAcceso servicio(bd);
+        auto d=datos();d.correo="perfil"+QString::number(QDateTime::currentMSecsSinceEpoch())+"@example.com";
+        auto alta=servicio.registrar(d);QVERIFY2(alta.correcto(),qPrintable(alta.error));
+        auto sesion=alta.sesion;const auto original=d;
+        d.clave.clear();d.confirmacion.clear();
+        QVERIFY(!servicio.actualizarPerfil(sesion,d,{}).correcto());
+        d.nombre=QString(41,'A');QVERIFY(!servicio.actualizarPerfil(sesion,d,{}).correcto());
+        d.nombre="José7";QVERIFY(!servicio.actualizarPerfil(sesion,d,{}).correcto());
+        d.nombre="José";d.paterno=" ";QVERIFY(!servicio.actualizarPerfil(sesion,d,{}).correcto());
+        d.paterno=original.paterno;d.correo="incorrecto";QVERIFY(!servicio.actualizarPerfil(sesion,d,{}).correcto());
+        d.correo="lopez.garfias.enrique@gmail.com";QVERIFY(!servicio.actualizarPerfil(sesion,d,{}).correcto());
+        d.correo=original.correo;d.nacimiento=QDate::currentDate();QVERIFY(!servicio.actualizarPerfil(sesion,d,{}).correcto());
+        d.nacimiento=original.nacimiento;d.clave=original.clave;d.confirmacion=d.clave;
+        QVERIFY(!servicio.actualizarPerfil(sesion,d,original.clave).correcto());
+        d.clave="Nueva#34Ab";d.confirmacion=d.clave;
+        QVERIFY(!servicio.actualizarPerfil(sesion,d,"Incorrecta1#").correcto());
+        auto cambio=servicio.actualizarPerfil(sesion,d,original.clave);QVERIFY2(cambio.correcto(),qPrintable(cambio.error));
+        QVERIFY(!servicio.ingresar(d.correo,original.clave).correcto());
+        ConexionBD otra;QString error;QVERIFY(otra.abrir(error));ServicioAcceso lectura(otra.base());
+        auto entrada=lectura.ingresar(d.correo,d.clave);QVERIFY(entrada.correcto());QCOMPARE(entrada.sesion.nombre,QString("José"));
+        QImage foto(512,512,QImage::Format_ARGB32);foto.fill(Qt::red);
+        auto imagen=servicio.guardarFoto(entrada.sesion,foto);QVERIFY2(imagen.correcto(),qPrintable(imagen.error));
+        QVERIFY(QFileInfo::exists(imagen.sesion.fotoRuta));
+        QCOMPARE(lectura.ingresar(d.correo,d.clave).sesion.fotoRuta,imagen.sesion.fotoRuta);
+        QVERIFY(!servicio.guardarFoto(imagen.sesion,foto).correcto());
+        QVERIFY(!servicio.guardarFoto(imagen.sesion,QImage(10,10,QImage::Format_RGB32)).correcto());
+        auto quitar=servicio.guardarFoto(imagen.sesion,{});QVERIFY(quitar.correcto());QVERIFY(quitar.sesion.fotoRuta.isEmpty());
+        QVERIFY(!QFileInfo::exists(imagen.sesion.fotoRuta));
+        QVERIFY(lectura.ingresar(d.correo,d.clave).sesion.fotoRuta.isEmpty());
+        auto invalida=sesion;invalida.rol=Rol::Administrador;
+        QVERIFY(!servicio.guardarFoto(invalida,foto).correcto());
+        invalida=sesion;invalida.restringida=true;
+        QVERIFY(!servicio.actualizarPerfil(invalida,d,d.clave).correcto());
+    }
+    void editorPerfilYFotoAdmin() {
+        ServicioAcceso servicio(bd);auto d=datos();
+        d.correo="editor"+QString::number(QDateTime::currentMSecsSinceEpoch())+"@example.com";
+        auto r=servicio.registrar(d);QVERIFY(r.correcto());auto sesion=r.sesion;
+        bool completado=false;
+        QTimer limite;
+        limite.setSingleShot(true);
+        connect(&limite,&QTimer::timeout,this,[]{if(auto *modal=qobject_cast<QDialog*>(QApplication::activeModalWidget()))modal->reject();});
+        limite.start(15000);
+        QTimer::singleShot(100,this,[&] {
+            auto *modal=QApplication::activeModalWidget();if(!modal)return;
+            auto *nombre=modal->findChild<QLineEdit*>("nombrePerfil");if(!nombre)return;
+            QCOMPARE(nombre->maxLength(),40);
+            nombre->setText("Nombre Nuevo");
+            modal->grab().save(QCoreApplication::applicationDirPath()+"/editor-perfil-verificado.png");
+            if(auto *guardar=boton(*modal,"Guardar cambios")){completado=true;guardar->click();}
+        });
+        QVERIFY(editarPerfil(nullptr,d.nombre,d.paterno,d.materno,d.correo,d.nacimiento,[](const QString &,const QString &){return true;},&sesion));
+        limite.stop();QVERIFY(completado);QCOMPARE(d.nombre,QString("Nombre Nuevo"));
+        QCOMPARE(servicio.ingresar(d.correo,d.clave).sesion.nombre,d.nombre);
+        const auto folio=escalar("SELECT folio FROM administrador WHERE usuario_id=2").toString();
+        const auto correo=escalar("SELECT correo FROM usuario WHERE id=2").toString();
+        auto admin=servicio.ingresar(correo,claves[1].toString(),folio);QVERIFY(admin.correcto());
+        const auto antes=escalar("SELECT COUNT(*) FROM actividad_administrativa WHERE administrador_id=2 AND accion='FOTO_PERFIL'").toInt();
+        QImage foto(512,512,QImage::Format_ARGB32);foto.fill(Qt::blue);
+        auto guardada=servicio.guardarFoto(admin.sesion,foto);QVERIFY2(guardada.correcto(),qPrintable(guardada.error));
+        QVERIFY(servicio.guardarFoto(guardada.sesion,{}).correcto());
+        QCOMPARE(escalar("SELECT COUNT(*) FROM actividad_administrativa WHERE administrador_id=2 AND accion='FOTO_PERFIL'").toInt(),antes+2);
     }
     void cleanupTestCase() {QThreadPool::globalInstance()->waitForDone(); bd=QSqlDatabase();}
 };

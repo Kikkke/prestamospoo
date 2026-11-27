@@ -3,18 +3,18 @@
 #include <QList>
 #include <QPair>
 
-// Contenido educativo independiente de la lógica de cálculo del futuro simulador.
+// Contenido educativo independiente de la lógica de cálculo del simulador.
 inline QList<QPair<QString, QString>> guiaPrestamos()
 {
     return {
         {"1. ¿Qué hace este programa?",
          "Un préstamo es dinero que recibes con el compromiso de devolverlo en un plazo acordado. Normalmente también pagas intereses por usarlo. Este programa busca ayudarte a entender esos pagos y comparar condiciones antes de decidir. No entrega dinero ni contrata préstamos.\n\n"
-         "ESTADO ACTUAL: el registro y el inicio de sesión validan tus datos y utilizan MySQL. El acceso administrativo requiere además el folio de esa cuenta. Los módulos de simulaciones y gestión siguen en integración: el simulador muestra cifras fijas y el comparador utiliza ejemplos independientes.\n\n"
-         "El modelo previsto usa pesos mexicanos (MXN), tasa fija, pagos mensuales y amortización sobre el saldo pendiente. No contempla comisiones, seguros, impuestos, atrasos ni abonos extraordinarios. Por eso su total no representa necesariamente el costo de un crédito real."},
+         "ESTADO ACTUAL: el registro y el inicio de sesión validan tus datos y utilizan MySQL. El acceso administrativo requiere además el folio de esa cuenta. El perfil propio y la foto se guardan. El simulador calcula y guarda condiciones y cuotas en MySQL; historial y comparador todavía muestran ejemplos independientes. La gestión administrativa sigue en integración.\n\n"
+         "El modelo usa pesos mexicanos (MXN), tasa fija, pagos mensuales y amortización sobre el saldo pendiente. No contempla comisiones, seguros, impuestos, atrasos ni abonos extraordinarios. Por eso su total no representa necesariamente el costo de un crédito real."},
         {"2. Cómo recorrer el software",
          "ACCESO Y REGISTRO\nIntroduce tu correo y contraseña para iniciar sesión. Si eres administrador, después se solicitará tu folio. Para registrarte completa nombre, ambos apellidos, correo, nacimiento y contraseña con confirmación; debes ser mayor de edad y aceptar los términos tras recorrerlos. La cuenta se guarda en MySQL. Una cuenta deshabilitada solo entra a su acceso restringido.\n\n"
          "INICIO / SIMULADOR\nNombre: una etiqueta para reconocer tu plan, como ‘Computadora’. Monto: el dinero que pedirías, no el precio completo del producto si ya pagarás una parte. Tasa nominal anual: escribe el porcentaje anual, por ejemplo 12 para 12 %, no 0.12. Plazo: número de meses, por ejemplo 3. El programa no solicita CAT en el campo de tasa.\n\n"
-         "A la derecha están la mensualidad, los intereses y el total. Debajo aparece la tabla de amortización. Hoy muestran siempre el ejemplo de $12,000, tasa de 0 % y tres meses, aunque captures otros valores. Calcular y Guardar están deshabilitados; cuando se implementen, actualizarán los resultados y permitirán conservar una simulación.\n\n"
+         "Nombre: de 1 a 50 caracteres, letras, números, espacios y guion bajo. Monto: $1.00 a $10,000,000.00 MXN. Tasa: 0.00 a 200.00 %. Plazo entero: 1 a 480 meses. Usa punto decimal y no escribas separadores de miles. Pulsa Calcular préstamo para actualizar mensualidad, intereses, total y tabla completa. Cambiar cualquier campo exige recalcular antes de guardar. Guardar conserva la simulación y todas sus cuotas para tu cuenta; otro clic no duplica ese resultado. El último pago liquida el saldo exacto; en importes pequeños el redondeo puede producir pagos de cero.\n\n"
          "HISTORIAL\nMuestra 20 registros ilustrativos. Busca por nombre sin importar mayúsculas ni acentos, o pulsa un encabezado para ordenar. La X de cada fila pide confirmación antes de quitarla. Cancelar conserva el registro; Eliminar lo retira durante esta ejecución. Al reiniciar vuelven los ejemplos. Estos cambios no modifican el simulador ni el comparador.\n\n"
          "COMPARADOR\nBusca y selecciona dos de los seis ejemplos precargados. Las tarjetas y la tabla se actualizan con sus datos de muestra; no se calculan préstamos nuevos. Los resúmenes señalan menor mensualidad, menor total y menor plazo, o indican un empate. Se avisa si eliges el mismo ejemplo o montos distintos. El catálogo es independiente del historial. La comparación inicial contrasta $12,000 sin intereses a tres y seis meses: $4,000 frente a $2,000 mensuales, con el mismo total de $12,000.\n\n"
          "ACERCA DE Y SALIDA\nAquí puedes consultar esta guía. Usa la rueda del ratón o la barra de desplazamiento para seguir leyendo. Cerrar sesión elimina el acceso de la cuenta actual y limpia los formularios. Para volver a entrar deberás autenticarte de nuevo. Las cuentas registradas permanecen en MySQL."},
@@ -25,7 +25,7 @@ inline QList<QPair<QString, QString>> guiaPrestamos()
          "El mes siguiente se aplica el mismo 1 %, pero al saldo menor: $8,039.73 × 0.01 ≈ $80.40. Aunque la tasa no cambie, los intereses en pesos bajan al disminuir la deuda. De tu pago se destina cada vez más a capital.\n\n"
          "Por eso no basta multiplicar monto × tasa anual × años para calcular este tipo de préstamo: esa operación supone una base que no se reduce. Aquí el saldo cambia después de cada pago."},
         {"4. Ejemplo completo: $12,000 al 12 % anual, en 3 meses",
-         "Este es un ejemplo educativo diferente al de 0 % que muestra el tablero. Supone tasa nominal anual fija, pagos puntuales cada mes y ningún cargo adicional.\n\n"
+         "Puedes reproducir este ejemplo educativo en el simulador. Supone tasa nominal anual fija, pagos puntuales cada mes y ningún cargo adicional.\n\n"
          "Mes 1: saldo inicial $12,000.00; interés $120.00; pago $4,080.27; abono a capital $3,960.27; saldo final $8,039.73.\n\n"
          "Mes 2: saldo inicial $8,039.73; interés $80.40; pago $4,080.27; abono a capital $3,999.87; saldo final $4,039.86.\n\n"
          "Mes 3: saldo inicial $4,039.86; interés $40.40; pago $4,080.26; abono a capital $4,039.86; saldo final $0.00.\n\n"
@@ -40,7 +40,7 @@ inline QList<QPair<QString, QString>> guiaPrestamos()
         {"6. Cómo leer la tabla y de dónde sale la mensualidad",
          "Cada fila representa un mes. Saldo inicial: lo que debes antes del pago. Interés: el costo por ese mes. Capital: la parte del pago que reduce la deuda. Pago: capital más interés. Saldo final: lo que queda por devolver. El saldo final de una fila pasa a ser el inicial de la siguiente.\n\n"
          "En el ejemplo sin cargos se cumplen estas relaciones: pago = interés + abono a capital; saldo final = saldo inicial − abono a capital. La suma del capital debe recuperar el monto prestado y el último saldo debe quedar en cero.\n\n"
-         "El método previsto es el sistema francés: se calcula una cuota mensual constante, salvo un posible ajuste final por centavos. Al principio una mayor parte de cada cuota va a intereses; después, más va a capital.\n\n"
+         "El método es el sistema francés: se calcula una cuota mensual constante, salvo un posible ajuste final por centavos. Al principio una mayor parte de cada cuota va a intereses; después, más va a capital.\n\n"
          "Si quieres conocer la fórmula: M = P × i / [1 − (1 + i)^(−n)]. P es el monto, i la tasa mensual en decimal y n el número de meses. El símbolo ^ significa elevar a una potencia. Con tasa de 0 %, se usa M = P / n. No necesitas resolver esta fórmula para usar la interfaz.\n\n"
          "La precisión depende de las reglas de cálculo. Un crédito real puede usar días exactos, otros calendarios, cargos y reglas contractuales distintas; el simulador no los reproduce."}
     };

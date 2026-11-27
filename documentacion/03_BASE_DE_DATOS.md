@@ -420,3 +420,31 @@ La compilación Debug que usa Qt Creator también terminó correctamente y pasó
 --comprobar-bd con código 0. El kit MinGW instalado utiliza las bibliotecas Qt
 Release; el mismo controlador local QMYSQL funciona en esta configuración Debug.
 No hace falta sustituir los plugins de la instalación global de Qt.
+
+## Perfil propio persistente — 26/11/2026
+Mi cuenta y la ficha del administrador en sesión guardan datos y foto propios.
+Validaciones compartidas: nombre y ambos apellidos obligatorios, letras/espacios y
+máximo 40 caracteres; correo válido y único entre todas las cuentas; mayoría de edad;
+nueva contraseña de 8–15 caracteres, mayúscula, minúscula, número y símbolo, sin espacios.
+Para cambiarla se verifica la contraseña actual y se rechaza reutilizarla. Ambos campos
+nuevos vacíos conservan la contraseña. Se rechaza guardar cuando no hay cambios reales.
+ServicioAcceso revalida el rol/estado, usa transacción y bloqueo compartido con registro.
+Los editores esperan el resultado fuera del hilo gráfico antes de actualizar las vistas.
+
+Foto: se conserva selección/recorte; se limita entrada a 10 MiB y 12000 píxeles por lado,
+y se guarda PNG 512×512 en AppDataLocation/fotos. MySQL guarda foto_ruta, no los bytes.
+Guardar escribe un archivo nuevo, confirma SQL y retira el anterior solo dentro de la
+carpeta gestionada. Fallo SQL retira el nuevo; restablecer guarda NULL. La misma foto
+se rechaza. Respaldar base y carpeta de fotos juntas. No se requiere modificar el SQL.
+Los cambios propios del administrador registran actividad sin claves, hashes ni folios.
+Edición administrativa de terceros, directorio de clientes y sus vistas siguen pendientes.
+
+## Guardado de simulaciones — 26/11/2026
+Se utiliza el esquema existente: simulacion almacena propietario, nombre, condiciones,
+moneda MXN y timestamps del servidor; cuota almacena número, interés y abono a capital.
+Saldo y pago son derivados; no se agregaron columnas de totales ni nuevas tablas.
+La transacción incluye todas las cuotas. Se revalida cliente vigente antes del INSERT.
+Prueba real: lectura desde otra conexión reproduce las cuotas calculadas; un trigger
+exclusivo de la base de pruebas falla en la cuota 2 y no deja filas parciales. El trigger
+se retira al terminar. La base principal y el instalador no se modificaron en esta etapa.
+No hace falta borrar datos ni volver a ejecutar Financionanti.sql para usar el simulador.

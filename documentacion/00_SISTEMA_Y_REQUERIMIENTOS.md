@@ -47,15 +47,15 @@ No terminar el proceso de la aplicación del usuario sin avisar; para pruebas us
 | Interfaz | Tema, navegación, formularios, tarjetas, filtros, fotos, ayuda | Mantener diseño y corregir solo defectos necesarios durante integración |
 | Login | Autenticación MySQL/PBKDF2, folio de la cuenta, rol, suspensión y cierre de sesión por ID | Integrar autorización y persistencia de los módulos restantes |
 | Registro | Validación compartida, ambos apellidos obligatorios, términos manuales y alta transaccional usuario + cliente | Sin pendientes de este flujo en el alcance acordado |
-| Inicio | Formulario y resultados fijos; calcular/guardar deshabilitados | Cálculo real, invalidar resultados editados y guardado atómico |
+| Inicio | Validación, motor en centavos, tabla completa, recalcular tras cambios y guardado atómico en MySQL | Conectar historial, detalle/PDF y comparador con las simulaciones guardadas |
 | Historial | 20 registros locales, búsqueda, iconos, borrado temporal | Consulta del propietario y eliminación lógica SQL |
 | Amortización/PDF | Cálculo local de condiciones de la fila y PDF multipágina | Consultar cuotas guardadas coherentes y fechas reales |
 | Comparador | Seis opciones y resultados precargados independientes | Usar historial del propietario y eliminar resultados hardcodeados |
-| Mi cuenta/fotos | Identidad de la sesión real; edición y recortes temporales | Persistir ediciones y fotos; refrescar todas las vistas |
+| Mi cuenta/fotos | Perfil propio, contraseña y foto persistentes; validaciones y rechazo de cambios vacíos | Integrar las fichas de clientes de administración |
 | Administración | Sesión real y folio contra BD; directorio de administradores desde SQL; gestión todavía temporal | Persistir cambios, clientes, apelaciones y auditoría |
 | Actividad | 24 ejemplos locales y filtros/paginación | Registrar operaciones realizadas y leer SQL |
 | Base de datos | QMYSQL verificado y script completo instalado en MySQL de pruebas | El propietario recreará su base con el script actualizado |
-| Contraseñas | Login, registro y semillas usan PBKDF2-HMAC-SHA-256 | Integrar cambio persistente de contraseña en perfil/administración |
+| Contraseñas | Login, registro, semillas y cambios de contraseña propios usan PBKDF2-HMAC-SHA-256 | Integrar edición administrativa de terceros |
 
 El frontend está **aprobado visualmente**, no terminado funcionalmente. La memoria temporal, textos «demo», perfiles independientes y botones deshabilitados deben retirarse al sustituirlos por operaciones reales. No limitarse a ocultar etiquetas para declarar terminado el backend.
 
@@ -816,3 +816,33 @@ los siete clientes usan las claves propuestas y aceptadas en el chat. Solo se
 incluyen hashes con sal en los INSERT. El propietario ejecutará el SQL completo
 tras eliminar su base anterior; el programa no la borra ni reinstala al arrancar.
 No confundir esta entrega con la integración del simulador o de la gestión.
+
+## Perfil propio persistente — 26/11/2026
+Mi cuenta y la ficha del administrador en sesión guardan datos y foto propios.
+Validaciones compartidas: nombre y ambos apellidos obligatorios, letras/espacios y
+máximo 40 caracteres; correo válido y único entre todas las cuentas; mayoría de edad;
+nueva contraseña de 8–15 caracteres, mayúscula, minúscula, número y símbolo, sin espacios.
+Para cambiarla se verifica la contraseña actual y se rechaza reutilizarla. Ambos campos
+nuevos vacíos conservan la contraseña. Se rechaza guardar cuando no hay cambios reales.
+ServicioAcceso revalida el rol/estado, usa transacción y bloqueo compartido con registro.
+Los editores esperan el resultado fuera del hilo gráfico antes de actualizar las vistas.
+
+Foto: se conserva selección/recorte; se limita entrada a 10 MiB y 12000 píxeles por lado,
+y se guarda PNG 512×512 en AppDataLocation/fotos. MySQL guarda foto_ruta, no los bytes.
+Guardar escribe un archivo nuevo, confirma SQL y retira el anterior solo dentro de la
+carpeta gestionada. Fallo SQL retira el nuevo; restablecer guarda NULL. La misma foto
+se rechaza. Respaldar base y carpeta de fotos juntas. No se requiere modificar el SQL.
+Los cambios propios del administrador registran actividad sin claves, hashes ni folios.
+Edición administrativa de terceros, directorio de clientes y sus vistas siguen pendientes.
+
+## Simulador implementado — 26/11/2026
+El alcance aprobado de esta etapa es calcular, mostrar y guardar. Motor y servicio en
+Simulador.h/.cpp; interfaz en PanelPrincipal.cpp; pruebas en pruebas/PruebasSimulador.cpp.
+No se modificó ni reinstaló el esquema. Historial, PDF y comparador permanecen para
+la siguiente etapa: sus muestras no representan todavía las simulaciones del usuario.
+
+Nota del entorno local: Windows impidió sobrescribir el ejecutable anterior de la
+carpeta Debug. Se configuró CMAKE_RUNTIME_OUTPUT_DIRECTORY en su caché local para
+usar build/Desktop_Qt_6_12_0_MinGW_64_bit_Debug/bin, donde compiló correctamente.
+Qt Creator utiliza el target CalculadorPrestamos: volver a ejecutar CMake para
+refrescar la ruta antes de Ctrl+R. No se cambió esta ruta en el CMakeLists compartido.

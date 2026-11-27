@@ -1,6 +1,7 @@
 #pragma once
 #include "SelectorDesplegable.h"
 #include "Acceso.h"
+#include "Simulador.h"
 #include <QSqlQuery>
 #include <QVariant>
 #include "FondoAcceso.h"
@@ -50,11 +51,11 @@ public:
     PanelAdministrador(QSqlDatabase base, const Sesion &sesion, QWidget *parent=nullptr):QWidget(parent),bd(base),sesionActual(sesion) {
         setObjectName("dashboard");
         QSqlQuery cuentas(bd);
-        if(cuentas.exec("SELECT u.id,u.nombre,u.apellido_paterno,u.apellido_materno,u.correo,u.nacimiento FROM usuario u JOIN administrador a ON a.usuario_id=u.id WHERE a.eliminado_en IS NULL")) {
+        if(cuentas.exec("SELECT u.id,u.nombre,u.apellido_paterno,u.apellido_materno,u.correo,u.nacimiento,u.foto_ruta FROM usuario u JOIN administrador a ON a.usuario_id=u.id WHERE a.eliminado_en IS NULL")) {
             while(cuentas.next()) {
                 Admin a; a.id=cuentas.value(0).toInt(); a.nombre=cuentas.value(1).toString();
                 a.paterno=cuentas.value(2).toString(); a.materno=cuentas.value(3).toString();
-                a.correo=cuentas.value(4).toString(); a.nacimiento=cuentas.value(5).toDate();
+                a.correo=cuentas.value(4).toString(); a.nacimiento=cuentas.value(5).toDate();a.foto=QPixmap(cuentas.value(6).toString());
                 admins.append(a);
             }
         }
@@ -75,7 +76,7 @@ public:
             navegacion->addButton(b); b->setChecked(s==pagina);
             connect(b,&QPushButton::clicked,this,[this,s](){ if(pagina!=s) { pagina=s; render(); } });
         }
-        menu->addStretch(); menu->addWidget(label("PROTOTIPO\nCambios temporales","caption"));
+        menu->addStretch(); menu->addWidget(label("Gestión en desarrollo","caption"));
         connect(button("Cerrar sesión",menu),&QPushButton::clicked,this,[this](){sesionActual={};if(salir)salir();});
         raiz->addWidget(lateral);
         scroll=new QScrollArea; scroll->setWidgetResizable(true); raiz->addWidget(scroll,1); render();
@@ -112,7 +113,7 @@ private:
         auto *viejo=scroll->takeWidget(); if(viejo)viejo->deleteLater();
         auto *f=new FondoAcceso; auto *l=new QVBoxLayout(f);l->setContentsMargins(24,24,24,24);l->setSpacing(16);scroll->setWidget(f);
         l->addWidget(label("ADMINISTRACIÓN / "+pagina,"eyebrow"));l->addWidget(label(pagina,"title"));
-        l->addWidget(label("Datos de demostración · No se guardan al cerrar la aplicación","caption"));
+        l->addWidget(label(pagina=="Administradores"?"Tu perfil propio se guarda. La gestión de otras cuentas sigue siendo de demostración.":"Datos de demostración · No se guardan al cerrar la aplicación","caption"));
         if(pagina=="Clientes") {
             l->addWidget(label("Directorio de clientes · Consulta sus cuentas y simulaciones", "muted"));
             auto *buscar=new QLineEdit;buscar->setPlaceholderText("Buscar cliente por nombre o correo…");buscar->setClearButtonEnabled(true);l->addWidget(buscar);
@@ -271,9 +272,10 @@ private:
     }
     bool editar(int i,int j) {
         const auto anterior=clientes[i].sims[j];QDialog d(this);d.setWindowTitle("Editar simulación");auto *l=new QVBoxLayout(&d);auto *f=new QFormLayout;l->addLayout(f);
-        auto *nombre=new QLineEdit(anterior.nombre);auto *monto=new QDoubleSpinBox;monto->setRange(0.01,999999999);monto->setValue(anterior.monto);auto *tasa=new QDoubleSpinBox;tasa->setRange(0,1000);tasa->setValue(anterior.tasa);auto *meses=new QSpinBox;meses->setRange(1,600);meses->setValue(anterior.meses);
+        auto *nombre=new QLineEdit(anterior.nombre);auto *monto=new QDoubleSpinBox;monto->setRange(1.00,10000000.00);monto->setValue(anterior.monto);auto *tasa=new QDoubleSpinBox;tasa->setRange(0,200);tasa->setValue(anterior.tasa);auto *meses=new QSpinBox;meses->setRange(1,480);meses->setValue(anterior.meses);
+        nombre->setMaxLength(50);
         f->addRow("Nombre",nombre);f->addRow("Monto MXN",monto);f->addRow("Tasa anual %",tasa);f->addRow("Plazo en meses",meses);l->addWidget(label("Prototipo: se editan las condiciones de muestra. El recálculo se implementará después.","caption"));
-        connect(button("Guardar cambios",l),&QPushButton::clicked,&d,[&](){if(nombre->text().trimmed().isEmpty())return;QString resumen=QString("%1 → %2\nMonto: %3 → %4\nTasa anual: %5 → %6\nMeses: %7 → %8").arg(anterior.nombre,nombre->text()).arg(anterior.monto).arg(monto->value()).arg(anterior.tasa).arg(tasa->value()).arg(anterior.meses).arg(meses->value());if(confirmar(resumen))d.accept();});connect(button("Cancelar",l),&QPushButton::clicked,&d,&QDialog::reject);
+        connect(button("Guardar cambios",l),&QPushButton::clicked,&d,[&](){const auto validado=MotorPrestamo::calcular(EntradaPrestamo{nombre->text(),QString::number(monto->value(),'f',2),QString::number(tasa->value(),'f',2),QString::number(meses->value())});if(!validado.valido()){QMessageBox::warning(&d,"Condiciones inválidas",validado.error);return;}QString resumen=QString("%1 → %2\nMonto: %3 → %4\nTasa anual: %5 → %6\nMeses: %7 → %8").arg(anterior.nombre,nombre->text()).arg(anterior.monto).arg(monto->value()).arg(anterior.tasa).arg(tasa->value()).arg(anterior.meses).arg(meses->value());if(confirmar(resumen))d.accept();});connect(button("Cancelar",l),&QPushButton::clicked,&d,&QDialog::reject);
         if(d.exec()!=QDialog::Accepted)return false;clientes[i].sims[j]={nombre->text().trimmed(),monto->value(),tasa->value(),meses->value()};return true;
     }
     void verAdmin(int i) {
@@ -283,7 +285,7 @@ private:
         auto *l=new QVBoxLayout(&d);l->setContentsMargins(24,24,24,24);l->setSpacing(16);
         auto *cabecera=new QHBoxLayout;auto *avatar=new AvatarCliente;avatar->setFixedSize(64,64);avatar->setFoto(a.foto);
         if(esSesion(i)){auto *camara=botonFoto();cabecera->addWidget(avatarEditable(avatar,camara));
-            connect(camara,&QPushButton::clicked,&d,[&,i](){if(!esSesion(i))return;if(editarFoto(&d,admins[i].foto,[&](){return confirmar("Cambiar tu foto de perfil");})){avatar->setFoto(admins[i].foto);render();}});
+            connect(camara,&QPushButton::clicked,&d,[&,i](){if(!esSesion(i))return;if(editarFoto(&d,admins[i].foto,[&](){return confirmar("Cambiar tu foto de perfil");},&sesionActual)){avatar->setFoto(admins[i].foto);render();}});
         }else cabecera->addWidget(avatar);
         cabecera->addWidget(label(a.completo(),"title"),1);l->addLayout(cabecera);
         l->addWidget(label(esSesion(i)?"Sesión actual · Administrador":"Administrador · Mismos permisos","badge"));
@@ -293,9 +295,9 @@ private:
             if(editarPerfil(&d,admins[i].nombre,admins[i].paterno,admins[i].materno,admins[i].correo,admins[i].nacimiento,[&,i](const QString &correo,const QString &clave){
                 for(int j=0;j<admins.size();++j)if(j!=i&&admins[j].correo.compare(correo,Qt::CaseInsensitive)==0){QMessageBox::warning(&d,"Correo registrado","Otro administrador ya utiliza ese correo.");return false;}
                 if(!confirmar("Autorizar edición de datos de "+admins[i].nombre))return false;
-                if(!clave.isEmpty())admins[i].claveDemo=QCryptographicHash::hash(clave.toUtf8(),QCryptographicHash::Sha256);
+                if(!esSesion(i) && !clave.isEmpty())admins[i].claveDemo=QCryptographicHash::hash(clave.toUtf8(),QCryptographicHash::Sha256);
                 return true;
-            })){d.accept();render();}
+            },esSesion(i)?&sesionActual:nullptr)){d.accept();render();}
         });
         if(esSesion(i)) connect(button("Revelar mi folio",l),&QPushButton::clicked,&d,[&,i](){
             if(!esSesion(i))return; // Solo el propietario de la sesión puede consultar su folio.

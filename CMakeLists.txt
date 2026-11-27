@@ -13,6 +13,9 @@ add_executable(CalculadorPrestamos WIN32
     controles.qrc
     Acceso.h
     Acceso.cpp
+    Perfil.cpp
+    Simulador.h
+    Simulador.cpp
     TareaAcceso.h
     ConexionBD.h
     ConexionBD.cpp
@@ -62,4 +65,14 @@ if(PROBAR_ACCESO)
         Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent)
     add_custom_command(TARGET PruebasAcceso POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/runtime" "$<TARGET_FILE_DIR:PruebasAcceso>")
+    add_executable(PruebasSimulador pruebas/PruebasSimulador.cpp ${FUENTES_APP})
+    target_include_directories(PruebasSimulador PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_compile_definitions(PruebasSimulador PRIVATE
+        ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        CONFIG_LOCAL="${CMAKE_CURRENT_SOURCE_DIR}/conexion.local.ini")
+    target_link_libraries(PruebasSimulador PRIVATE Qt${QT_VERSION_MAJOR}::Test
+        Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Sql
+        Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent)
+    add_custom_command(TARGET PruebasSimulador POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/runtime" "$<TARGET_FILE_DIR:PruebasSimulador>")
 endif()

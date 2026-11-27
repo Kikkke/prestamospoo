@@ -1,4 +1,6 @@
 #include <memory>
+#include <optional>
+#include "Simulador.h"
 #include "AvatarUsuario.h"
 #include "FotoPerfil.h"
 #include "EditarPerfil.h"
@@ -142,7 +144,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
         if (auto *b = grupo->button(i)) b->setChecked(true);
     });
     menu->addStretch();
-    menu->addWidget(texto("MODO PROTOTIPO\nDatos ilustrativos", "muted"));
+    menu->addWidget(texto("Historial y comparador\nen desarrollo", "muted"));
     connect(boton(menu, "Cerrar sesión"), &QPushButton::clicked, this, [this, pantallas]() {
         pantallas->setCurrentIndex(0);
         emit salirSolicitado();
@@ -158,7 +160,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     ruta->setWordWrap(false);
     filaBarra->addWidget(ruta);
     filaBarra->addStretch();
-    filaBarra->addWidget(texto("MXN  ·  PROTOTIPO", "badge"));
+    filaBarra->addWidget(texto("MXN  ·  SIMULADOR", "badge"));
     connect(pantallas, &QStackedWidget::currentChanged, this, [ruta, nombres](int i) {
         ruta->setText("Mi espacio  /  " + nombres.value(i));
     });
@@ -174,7 +176,9 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     zona->setStretch(0, 3);
     form->addWidget(texto("Condiciones del préstamo", "section"));
     form->addWidget(texto("01 · IDENTIFICA TU PLAN", "eyebrow"));
-    auto *nombre = new QLineEdit("Computadora");
+    auto *nombre = new QLineEdit;
+    nombre->setObjectName("nombreSimulacion");nombre->setMaxLength(50);
+    nombre->setValidator(new QRegularExpressionValidator(QRegularExpression("[\\p{L}\\p{M}\\p{N} _]*"),nombre));
     campo(form, "Nombre de la simulación", nombre);
     nombre->setPlaceholderText("Por ejemplo: computadora o estudios");
     form->addSpacing(8);
@@ -194,69 +198,58 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
         fila->addWidget(label,1);
         col->addLayout(fila); col->addWidget(control);
     };
-    auto *monto = new QDoubleSpinBox;
-    monto->setRange(0.01, 999999999.99);
-    monto->setPrefix("$ "); monto->setSuffix(" MXN"); monto->setValue(12000);
-    monto->setMinimumWidth(0); monto->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Fixed);
-    campoIcono(colMonto, "Monto solicitado", monto, 8);
-    auto *tasa = new QDoubleSpinBox;
-    tasa->setRange(0, 1000); tasa->setSuffix(" %");
-    campoIcono(colTasa, "Tasa nominal anual", tasa, 2);
-    form->addWidget(texto("Escribe 12 para una tasa anual del 12 %. No introduzcas el CAT.", "caption"));
+    auto *monto = new QLineEdit;
+    monto->setObjectName("montoSimulacion");monto->setMaxLength(32);
+    monto->setPlaceholderText("1.00 a 10000000.00");
+    monto->setMinimumWidth(0);monto->setSizePolicy(QSizePolicy::Ignored,QSizePolicy::Fixed);
+    campoIcono(colMonto, "Monto solicitado (MXN)", monto, 8);
+    auto *tasa = new QLineEdit;
+    tasa->setObjectName("tasaSimulacion");tasa->setMaxLength(32);tasa->setPlaceholderText("0.00 a 200.00");
+    campoIcono(colTasa, "Tasa nominal anual (%)", tasa, 2);
+    form->addWidget(texto("Usa punto decimal, sin separadores de miles. Escribe 12 para 12 % anual; no introduzcas el CAT.", "caption"));
     form->addSpacing(8);
     form->addWidget(texto("03 · ELIGE EL PLAZO", "eyebrow"));
-    auto *meses = new QSpinBox;
-    meses->setRange(1, 600); meses->setSuffix(" meses"); meses->setValue(3);
+    auto *meses = new QLineEdit;
+    meses->setObjectName("mesesSimulacion");meses->setMaxLength(32);meses->setPlaceholderText("1 a 480 meses enteros");
     campoIcono(form, "Tiempo para pagar", meses, 9);
     auto *plazos = new QHBoxLayout;
     plazos->setSpacing(8); form->addLayout(plazos);
     for(int plazo : {3,6,12,24}) {
         auto *rapido = boton(plazos, QString::number(plazo)+" meses");
         rapido->setObjectName("quickTerm"); rapido->setCheckable(true);
-        rapido->setChecked(plazo==meses->value());
-        connect(rapido,&QPushButton::clicked,this,[meses,plazo]() { meses->setValue(plazo); });
-        connect(meses,qOverload<int>(&QSpinBox::valueChanged),rapido,[rapido,plazo](int valor) { rapido->setChecked(valor==plazo); });
+        rapido->setChecked(false);
+        connect(rapido,&QPushButton::clicked,this,[meses,plazo]() { meses->setText(QString::number(plazo)); });
+        connect(meses,&QLineEdit::textChanged,rapido,[rapido,plazo](const QString &valor) { rapido->setChecked(valor==QString::number(plazo)); });
         // Pulsar el plazo activo debe conservar su selección.
-        connect(rapido,&QPushButton::clicked,rapido,[rapido,meses,plazo]() { rapido->setChecked(meses->value()==plazo); });
+        connect(rapido,&QPushButton::clicked,rapido,[rapido,meses,plazo]() { rapido->setChecked(meses->text()==QString::number(plazo)); });
     }
-    boton(form, "Calcular préstamo · Próximamente", true)->setEnabled(false);
-    auto *estado = texto("Resultado de muestra: Computadora · $12,000 · 0 % anual · 3 meses.", "sampleNotice");
-    form->addWidget(estado);
-    auto actualizarAviso = [nombre,monto,tasa,meses,estado]() {
-        const bool editado=nombre->text()!="Computadora" || monto->value()!=12000 || tasa->value()!=0 || meses->value()!=3;
-        estado->setText(editado
-            ? "Cambiaste las condiciones. Los resultados siguen correspondiendo al ejemplo inicial: $12,000 · 0 % anual · 3 meses."
-            : "Resultado de muestra: Computadora · $12,000 · 0 % anual · 3 meses.");
-    };
-    connect(nombre,&QLineEdit::textChanged,this,actualizarAviso);
-    connect(monto,qOverload<double>(&QDoubleSpinBox::valueChanged),this,actualizarAviso);
-    connect(tasa,qOverload<double>(&QDoubleSpinBox::valueChanged),this,actualizarAviso);
-    connect(meses,qOverload<int>(&QSpinBox::valueChanged),this,actualizarAviso);
+    auto *calcular=boton(form,"Calcular préstamo",true);
+    auto *estado=texto("Completa las condiciones y pulsa Calcular préstamo.","sampleNotice");
+    estado->setObjectName("estadoSimulacion");form->addWidget(estado);
     form->addStretch();
     auto *metricas = new QVBoxLayout;
     metricas->setSpacing(12);
     zona->addLayout(metricas, 2);
-    const QStringList titulos = {"Mensualidad", "Intereses totales", "Total por pagar"};
-    const QStringList valores = {"$4,000.00", "$0.00", "$12,000.00"};
+    QList<QLabel*> cifras;
+    const QStringList titulos = {"Cuota mensual regular", "Intereses totales", "Total por pagar"};
+    const QStringList valores = {"—", "—", "—"};
     for (int i = 0; i < 3; ++i) {
         auto *c = tarjeta(metricas);
         c->setSpacing(5);
         c->addWidget(texto(titulos[i], "muted"));
         auto *valor = texto(valores[i], i == 0 ? "metricAccent" : "metric");
-        c->addWidget(valor);
-        c->addWidget(texto("MXN · Resultado de muestra", "caption"));
+        cifras.append(valor);c->addWidget(valor);
+        c->addWidget(texto("MXN", "caption"));
     }
     auto *detalle = tarjeta(sim);
     auto *encabezado = new QHBoxLayout;
     detalle->addLayout(encabezado);
     encabezado->addWidget(texto("Tabla de amortización", "section"));
     encabezado->addStretch();
-    encabezado->addWidget(texto("EJEMPLO · 3 MESES · 0 % ANUAL", "badge"));
-    auto *amortizacion = tabla(detalle, {"Mes", "Saldo inicial", "Interés", "Capital", "Pago", "Saldo final"},
-          {{"1", "12,000.00", "0.00", "4,000.00", "4,000.00", "8,000.00"},
-           {"2", "8,000.00", "0.00", "4,000.00", "4,000.00", "4,000.00"},
-           {"3", "4,000.00", "0.00", "4,000.00", "4,000.00", "0.00"}});
-    amortizacion->setFixedHeight(170);
+    auto *resumen=texto("SIN CALCULAR","badge");encabezado->addWidget(resumen);
+    auto *amortizacion=tabla(detalle,{"Mes","Saldo inicial","Interés","Capital","Pago","Saldo final"},{});
+    amortizacion->setMinimumHeight(260);
+    amortizacion->horizontalHeader()->setMinimumSectionSize(125);
     amortizacion->setObjectName("amortizationTable");
     amortizacion->setShowGrid(false);
     amortizacion->setSelectionMode(QAbstractItemView::NoSelection);
@@ -272,10 +265,70 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     auto *pie = new QHBoxLayout;
     detalle->addLayout(pie);
     pie->addWidget(texto("Importes en MXN. Sin comisiones, seguros, impuestos ni CAT.", "caption"), 1);
-    boton(pie, "Guardar simulación")->setEnabled(false);
+    auto *guardar=boton(pie,"Guardar simulación");guardar->setEnabled(false);
+    struct EstadoCalculo {
+        CalculoPrestamo resultado;
+        std::optional<CondicionesPrestamo> guardado;
+        bool vigente=false,ocupado=false;
+    };
+    auto calculo=std::make_shared<EstadoCalculo>();
+    auto leer=[=](){return EntradaPrestamo{nombre->text(),monto->text(),tasa->text(),meses->text()};};
+    auto invalidar=[=]() {
+        calculo->vigente=false;guardar->setEnabled(false);
+        for(auto *valor:cifras)valor->setText("—");
+        amortizacion->setRowCount(0);resumen->setText("SIN CALCULAR");
+        estado->setText("Vuelve a calcular antes de guardar.");
+    };
+    for(auto *campo:{nombre,monto,tasa,meses})connect(campo,&QLineEdit::textChanged,this,invalidar);
+    connect(calcular,&QPushButton::clicked,this,[=]() {
+        if(calculo->ocupado)return;
+        const auto resultado=MotorPrestamo::calcular(leer());
+        invalidar();
+        if(!resultado.valido()){estado->setText(resultado.error);return;}
+        calculo->resultado=resultado;calculo->vigente=true;
+        const QList<qint64> valores{resultado.regular,resultado.intereses,resultado.total};
+        for(int i=0;i<3;++i)cifras[i]->setText("$"+MotorPrestamo::dinero(valores[i]));
+        resumen->setText(QString::number(resultado.condiciones.meses)+" MESES · "+MotorPrestamo::decimal(resultado.condiciones.tasa)+" % ANUAL");
+        amortizacion->setRowCount(resultado.cuotas.size());
+        for(int fila=0;fila<resultado.cuotas.size();++fila) {
+            const auto &q=resultado.cuotas[fila];
+            const QStringList celdas{QString::number(q.numero),MotorPrestamo::dinero(q.inicial),MotorPrestamo::dinero(q.interes),MotorPrestamo::dinero(q.capital),MotorPrestamo::dinero(q.pago),MotorPrestamo::dinero(q.final)};
+            for(int col=0;col<celdas.size();++col) {
+                auto *item=new QTableWidgetItem(celdas[col]);
+                item->setTextAlignment((col==0?Qt::AlignCenter:Qt::AlignRight)|Qt::AlignVCenter);
+                amortizacion->setItem(fila,col,item);
+            }
+        }
+        const bool repetido=calculo->guardado && *calculo->guardado==resultado.condiciones;
+        guardar->setEnabled(!repetido);
+        estado->setText(resultado.aviso+(repetido?" Esta simulación ya se guardó.":""));
+    });
+    connect(guardar,&QPushButton::clicked,this,[=]() {
+        if(calculo->ocupado || !calculo->vigente || !calculo->resultado.valido())return;
+        const auto datos=calculo->resultado.condiciones;
+        const auto actual=MotorPrestamo::calcular(leer());
+        if(!actual.valido() || !(actual.condiciones==datos)){invalidar();return;}
+        if(calculo->guardado && *calculo->guardado==datos)return;
+        calculo->ocupado=true;setEnabled(false);guardar->setEnabled(false);
+        estado->setText("Guardando la simulación y todas sus cuotas…");
+        const Sesion identidad=sesionActual;
+        auto *observador=new QFutureWatcher<GuardadoSimulacion>(this);
+        connect(observador,&QFutureWatcher<GuardadoSimulacion>::finished,this,[=]() {
+            const auto resultado=observador->result();observador->deleteLater();
+            calculo->ocupado=false;setEnabled(true);
+            if(!resultado.correcto()){estado->setText(resultado.error);guardar->setEnabled(calculo->vigente);return;}
+            calculo->guardado=datos;guardar->setEnabled(false);
+            estado->setText("Simulación guardada correctamente con todas sus cuotas. "+calculo->resultado.aviso);
+        });
+        observador->setFuture(QtConcurrent::run([identidad,datos]() {
+            ConexionBD conexion;QString error;
+            if(!conexion.abrir(error)){GuardadoSimulacion r;r.error=error;return r;}
+            return ServicioSimulaciones(conexion.base()).guardar(identidad,datos);
+        }));
+    });
     sim->addStretch();
 
-    auto *hist = pagina(pantallas, "Historial de simulaciones", "HISTORIAL  /  Registros de muestra. No se han guardado simulaciones reales.", "historial.png");
+    auto *hist = pagina(pantallas, "Historial de simulaciones", "HISTORIAL  /  Vista de demostración. La consulta de tus simulaciones guardadas se habilitará en la siguiente etapa.", "historial.png");
     hist->addWidget(new HistorialSimulaciones, 1);
 
     auto *comp = pagina(pantallas, "Compara tus opciones", "COMPARADOR  /  Explora dos ejemplos y descubre cómo cambian sus pagos y plazos.", "comparador.png");
@@ -283,7 +336,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     comp->addStretch();
     auto *ayuda = new PantallaAyuda;
     pantallas->addWidget(ayuda);
-    auto *cuenta=pagina(pantallas,"Mi cuenta","PERFIL  /  Consulta y edita tus datos de demostración.");
+    auto *cuenta=pagina(pantallas,"Mi cuenta","PERFIL  /  Consulta y edita tus datos.");
     auto *marco=new QFrame;marco->setObjectName("card");cuenta->addWidget(marco);
     auto *perfil=new QVBoxLayout(marco);perfil->setContentsMargins(24,24,24,24);perfil->setSpacing(24);
     auto *cabecera=new QHBoxLayout;cabecera->setSpacing(20);perfil->addLayout(cabecera);
@@ -305,20 +358,20 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     campos->addWidget(correoPerfil,1,0);campos->addWidget(fechaPerfil,1,1);
     campos->addWidget(texto("CONTRASEÑA","caption"),2,0);campos->addWidget(texto("••••••••","section"),3,0);
     campos->addWidget(texto("Puedes cambiarla desde el botón de edición.","muted"),3,1);
-    struct PerfilDemo {QString nombre="Cliente de muestra",correo="cliente@demo.mx",paterno,materno;QDate nacimiento{2000,1,1};QByteArray clave;QPixmap foto;};
-    auto modelo=std::make_shared<PerfilDemo>();
-    connect(camara,&QPushButton::clicked,this,[this,modelo,avatar,avatarLateral](){if(editarFoto(this,modelo->foto,[](){return true;})){avatar->setFoto(modelo->foto);avatarLateral->setFoto(modelo->foto);}});
+    struct PerfilCuenta {QString nombre="Cliente de muestra",correo="cliente@demo.mx",paterno,materno;QDate nacimiento{2000,1,1};QByteArray clave;QPixmap foto;};
+    auto modelo=std::make_shared<PerfilCuenta>();
+    connect(camara,&QPushButton::clicked,this,[this,modelo,avatar,avatarLateral](){if(editarFoto(this,modelo->foto,[](){return true;},&sesionActual)){avatar->setFoto(modelo->foto);avatarLateral->setFoto(modelo->foto);}});
 
     auto actualizar=[modelo,nombrePerfil,correoPerfil,fechaPerfil,saludoLateral](){saludoLateral->setText("Bienvenido, "+(modelo->nombre=="Cliente de muestra"?QString("Usuario"):modelo->nombre));nombrePerfil->setText(nombreCompleto(modelo->nombre,modelo->paterno,modelo->materno));correoPerfil->setText(modelo->correo);fechaPerfil->setText(modelo->nacimiento.toString("dd/MM/yyyy"));};actualizar();
-    connect(this,&PanelPrincipal::cargarPerfilSesion,this,[modelo,actualizar,avatar,avatarLateral](const QString &nombres,const QString &paterno,const QString &materno,const QString &correo,const QDate &nacimiento){
+    connect(this,&PanelPrincipal::cargarPerfilSesion,this,[this,modelo,actualizar,avatar,avatarLateral](const QString &nombres,const QString &paterno,const QString &materno,const QString &correo,const QDate &nacimiento){
         modelo->nombre=nombres;modelo->paterno=paterno;modelo->materno=materno;
-        modelo->correo=correo;modelo->nacimiento=nacimiento;modelo->clave.clear();modelo->foto=QPixmap();
+        modelo->correo=correo;modelo->nacimiento=nacimiento;modelo->clave.clear();modelo->foto=QPixmap(sesionActual.fotoRuta);
         avatar->setFoto(modelo->foto);avatarLateral->setFoto(modelo->foto);actualizar();
     });
     connect(editar,&QPushButton::clicked,this,[this,modelo,actualizar](){
-        if(editarPerfil(this,modelo->nombre,modelo->paterno,modelo->materno,modelo->correo,modelo->nacimiento,[modelo](const QString &,const QString &clave){if(!clave.isEmpty())modelo->clave=QCryptographicHash::hash(clave.toUtf8(),QCryptographicHash::Sha256);return true;}))actualizar();
+        if(editarPerfil(this,modelo->nombre,modelo->paterno,modelo->materno,modelo->correo,modelo->nacimiento,[](const QString &,const QString &){return true;},&sesionActual))actualizar();
     });
-    perfil->addWidget(texto("Cambios temporales de demostración. No modifican credenciales de acceso reales.","caption"));
+    perfil->addWidget(texto("Los cambios confirmados se guardan en tu cuenta.","caption"));
     cuenta->addStretch();
 
     connect(interpretar,&QPushButton::clicked,this,[pantallas,ayuda]() {

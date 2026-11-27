@@ -123,7 +123,7 @@ No bloquean la entrega de documentación. Preguntar solo cuando afecten la tarea
 | Textos de apelación/rechazo | PDF exige contenido y motivo de rechazo, pero no longitud máxima. Propuesta 2000 caracteres con contador. |
 | Usuario sin último acceso | Propuesta Inactivo con «Sin acceso», ordenar fechas nulas al final. No fecha inventada. |
 | Acceso restringido por suspensión | Definir si se registra como acceso en otro lugar; propuesta no actualizar ultimo_acceso operativo hasta entrar plenamente. |
-| Casos extremos de amortización | Con monto muy pequeño/plazo muy largo o tasa extrema, el redondeo a centavos puede impedir amortización regular. Mantener las reglas del PDF y acordar tratamiento visible; no generar capital negativo o fingir un resultado. |
+| Casos extremos de amortización | Resuelto el 26/11: permitir pagos cero por redondeo, ajustar la última cuota para liquidar, nunca generar capital negativo e indicar ajustes visibles. |
 | Datos temporales/históricos | Cuentas SQL contienen fechas de acceso anteriores a la fecha común de alta de semilla. Corregir si se exige cronología estricta; no fabricar actividad de respaldo. |
 | Auditoría de consultas | Registrar cambios siempre. Consultas protegidas de fichas pueden dejar evento sin datos sensibles; definir granularidad para evitar ruido. |
 
@@ -156,3 +156,28 @@ La sesión de clientes deshabilitados ya consulta sus propias apelaciones; el en
 y resolución persistente se dejan para administración, según la delimitación previa.
 No extender esta entrega a cálculo, simulaciones o persistencia de perfiles sin
 la siguiente indicación. Las claves administrativas no se reproducen en documentación.
+
+## Perfil propio persistente — 26/11/2026
+Mi cuenta y la ficha del administrador en sesión guardan datos y foto propios.
+Validaciones compartidas: nombre y ambos apellidos obligatorios, letras/espacios y
+máximo 40 caracteres; correo válido y único entre todas las cuentas; mayoría de edad;
+nueva contraseña de 8–15 caracteres, mayúscula, minúscula, número y símbolo, sin espacios.
+Para cambiarla se verifica la contraseña actual y se rechaza reutilizarla. Ambos campos
+nuevos vacíos conservan la contraseña. Se rechaza guardar cuando no hay cambios reales.
+ServicioAcceso revalida el rol/estado, usa transacción y bloqueo compartido con registro.
+Los editores esperan el resultado fuera del hilo gráfico antes de actualizar las vistas.
+
+Foto: se conserva selección/recorte; se limita entrada a 10 MiB y 12000 píxeles por lado,
+y se guarda PNG 512×512 en AppDataLocation/fotos. MySQL guarda foto_ruta, no los bytes.
+Guardar escribe un archivo nuevo, confirma SQL y retira el anterior solo dentro de la
+carpeta gestionada. Fallo SQL retira el nuevo; restablecer guarda NULL. La misma foto
+se rechaza. Respaldar base y carpeta de fotos juntas. No se requiere modificar el SQL.
+Los cambios propios del administrador registran actividad sin claves, hashes ni folios.
+Edición administrativa de terceros, directorio de clientes y sus vistas siguen pendientes.
+
+## Aprobación del simulador — 26/11/2026
+El propietario aprobó validación, cálculo, invalidación al editar, guardado transaccional
+y pruebas, incluida la política de redondeo extremo. Etapa terminada: calcular/mostrar/
+guardar. Próxima etapa: conectar historial, PDF y comparador; no presentar sus muestras
+como registros persistidos. Se actualizaron también los límites del editor administrativo
+provisional, sin convertir su edición en persistente ni ampliar el alcance a gestión.

@@ -123,7 +123,7 @@ Redondear cuota regular a centavos. Cada periodo: interés = redondeo(saldo inic
 Guardar importes definitivos en centavos enteros o una representación decimal acordada; no acumular dinero en double sin una política de redondeo central. El código existente usa std::round, útil como referencia, no prueba de robustez en todo el dominio.
 Cuota guarda interés y capital. Reconstruir saldo inicial desde P menos capital anterior, saldo final y pago; obtener totales sumando. No almacenar otras copias para cada pantalla. Mismo resultado para simulador, edición admin, historial, comparador y PDF.
 Invariantes: n cuotas consecutivas; pago = interés+capital; saldo final = inicial-capital; siguiente inicial = anterior final; sum(capital)=P; último saldo=0; sum(pagos)=P+sum(intereses). No sumar saldos como totales.
-Para montos diminutos/plazos largos (p.ej. 1 MXN/480, tasa 0), el redondeo puede dar cuotas regulares 0 y liquidación final distinta. No dividir por cero ni rechazar silenciosamente un extremo permitido: acordar y probar esa política antes de entregar; explicar ajuste final. También verificar que redondeo no produzca capital negativo para tasa alta/plazo largo.
+Para montos diminutos/plazos largos (p.ej. 1 MXN/480, tasa 0), el redondeo puede dar cuotas regulares 0 y liquidación final distinta. No dividir por cero ni rechazar silenciosamente un extremo permitido: aplicar la política aprobada el 26/11: permitir pagos cero, indicar el último pago y comprobar las invariantes; explicar ajuste final. También verificar que redondeo no produzca capital negativo para tasa alta/plazo largo.
 
 ### Calcular y guardar
 Calcular valida y construye un resultado asociado a una copia exacta de entradas. Cambiar nombre/monto/tasa/plazo invalida resultado para guardar; mostrar «Vuelve a calcular antes de guardar». Calcular otra vez actualiza resumen y todas las filas, no solo etiquetas.
@@ -284,3 +284,55 @@ Registro: nombre(s), apellido paterno y apellido materno admiten hasta 40 caract
 por campo. Los campos impiden introducir números y símbolos; permiten letras Unicode
 (incluidas ñ y vocales acentuadas) y espacios. El servicio también comprueba el límite
 y rechaza campos vacíos o compuestos únicamente por espacios.
+
+## Perfil propio persistente — 26/11/2026
+Mi cuenta y la ficha del administrador en sesión guardan datos y foto propios.
+Validaciones compartidas: nombre y ambos apellidos obligatorios, letras/espacios y
+máximo 40 caracteres; correo válido y único entre todas las cuentas; mayoría de edad;
+nueva contraseña de 8–15 caracteres, mayúscula, minúscula, número y símbolo, sin espacios.
+Para cambiarla se verifica la contraseña actual y se rechaza reutilizarla. Ambos campos
+nuevos vacíos conservan la contraseña. Se rechaza guardar cuando no hay cambios reales.
+ServicioAcceso revalida el rol/estado, usa transacción y bloqueo compartido con registro.
+Los editores esperan el resultado fuera del hilo gráfico antes de actualizar las vistas.
+
+Foto: se conserva selección/recorte; se limita entrada a 10 MiB y 12000 píxeles por lado,
+y se guarda PNG 512×512 en AppDataLocation/fotos. MySQL guarda foto_ruta, no los bytes.
+Guardar escribe un archivo nuevo, confirma SQL y retira el anterior solo dentro de la
+carpeta gestionada. Fallo SQL retira el nuevo; restablecer guarda NULL. La misma foto
+se rechaza. Respaldar base y carpeta de fotos juntas. No se requiere modificar el SQL.
+Los cambios propios del administrador registran actividad sin claves, hashes ni folios.
+Edición administrativa de terceros, directorio de clientes y sus vistas siguen pendientes.
+
+Verificación: perfilPersistente, editorPerfilYFotoAdmin y validaciones pasaron en
+la base aislada; incluyen escritura/lectura entre conexiones, claves, duplicados,
+no-op, foto/restauración y auditoría administrativa. Editor probado en ventana real.
+
+## Motor y guardado entregados — 26/11/2026
+MotorPrestamo recibe texto estricto o CondicionesPrestamo tipadas. Nombres 1–50,
+monto 100–1000000000 centavos, tasa 0–20000 centésimas de punto y meses 1–480.
+La captura admite dígitos ASCII y punto decimal con hasta dos decimales; rechaza
+comas, exponentes, NaN, infinitos, signos y exceso de precisión. No redondea entradas.
+
+Cuota teórica con long double, log1p/expm1 para estabilidad; cuota regular redondeada
+al centavo. Interés mensual exacto en enteros: (saldoCentavos*tasaCentesimas+60000)/120000.
+La división entera implementa mitad hacia arriba. Capital acotado entre cero y saldo;
+última cuota paga todo el saldo restante más interés. Se mantienen todos los periodos,
+incluso si hay pagos cero. Si el interés superara la cuota regular por redondeo, el
+pago cubre ese interés sin capital negativo y se informa. Se muestra el último pago.
+Todos los saldos, capitales, pagos, intereses y acumulados usan qint64 en centavos.
+
+ServicioSimulaciones recalcula al guardar desde las condiciones validadas; el cliente
+no suministra cuotas editables. Revalida ID/rol y ausencia de suspensión en transacción,
+inserta simulacion y sus cuotas y confirma solo después de completar todas. SQL enlazado;
+DECIMAL recibe cadenas exactas con punto. No cambia ultimo_acceso. La interfaz usa una
+conexión propia del trabajador, bloquea doble clic y conserva la última condición guardada.
+No es una deduplicación global: nombres repetidos e iguales condiciones en otra sesión
+siguen permitidos. Ante pérdida de confirmación del commit se avisa comprobar el registro.
+
+PruebasSimulador: entradas inválidas, extremos tipados, ejemplos de referencia, 180
+combinaciones de monto/tasa/plazo con invariantes de saldo y sumas, persistencia desde
+otra conexión, rechazo de rol/suspensión, rollback por trigger que falla en la segunda
+cuota y prueba de ventana real con cambio de condiciones y doble clic. Cuatro casos
+más inicialización/cierre: 6 passed, 0 failed. El target requiere PROBAR_ACCESO=ON y
+FINANCIONANTI_CONFIG apuntando a la base aislada financionantimex_pruebas_acceso_20261126.
+La integración del motor en historial/PDF/comparador se realizará en su próxima etapa.

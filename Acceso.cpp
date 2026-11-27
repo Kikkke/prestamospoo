@@ -42,9 +42,9 @@ QString Validaciones::perfil(const DatosRegistro &d) {
     for (int i = 0; i < valores.size(); ++i) {
         const QString valor = valores[i].normalized(QString::NormalizationForm_C).trimmed();
         if (valor.isEmpty()) return etiquetas[i] + ": este campo es obligatorio.";
-        if (valor.toUcs4().size() > (i == 0 ? 120 : 80) || !letras.match(valor).hasMatch()
+        if (valores[i].size() > 40 || !letras.match(valor).hasMatch()
             || !QRegularExpression("\\p{L}").match(valor).hasMatch())
-            return etiquetas[i] + ": utiliza únicamente letras y espacios, sin exceder " + QString::number(i == 0 ? 120 : 80) + " caracteres.";
+            return etiquetas[i] + ": utiliza únicamente letras y espacios, sin exceder " + QString::number(40) + " caracteres.";
     }
     const QString errorCorreo = Validaciones::correo(d.correo);
     if (!errorCorreo.isEmpty()) return errorCorreo;
@@ -139,13 +139,14 @@ ResultadoAcceso ServicioAcceso::ingresar(const QString &correo, const QString &c
     Transaccion tx(bd);
     if (!tx.disponible()) return fallo(errorSql);
     QSqlQuery q(bd);
-    q.prepare("SELECT u.id,u.nombre,u.apellido_paterno,u.apellido_materno,u.correo,u.nacimiento,u.password_hash,c.usuario_id,a.usuario_id,a.eliminado_en,a.folio FROM usuario u LEFT JOIN cliente c ON c.usuario_id=u.id LEFT JOIN administrador a ON a.usuario_id=u.id WHERE LOWER(TRIM(u.correo))=:correo FOR UPDATE");
+    q.prepare("SELECT u.id,u.nombre,u.apellido_paterno,u.apellido_materno,u.correo,u.nacimiento,u.password_hash,c.usuario_id,a.usuario_id,a.eliminado_en,a.folio,u.foto_ruta FROM usuario u LEFT JOIN cliente c ON c.usuario_id=u.id LEFT JOIN administrador a ON a.usuario_id=u.id WHERE LOWER(TRIM(u.correo))=:correo FOR UPDATE");
     q.bindValue(":correo",correoNormal(correo));
     if (!q.exec()) return fallo(errorSql);
     if (!q.next()) return fallo("Correo o contraseña incorrectos.");
     Sesion s;
     s.usuarioId=q.value(0).toInt(); s.nombre=q.value(1).toString(); s.paterno=q.value(2).toString(); s.materno=q.value(3).toString();
     s.correo=q.value(4).toString(); s.nacimiento=q.value(5).toDate();
+    s.fotoRuta=q.value(11).toString();
     const QString hash=q.value(6).toString(), folioEsperado=q.value(10).toString();
     const bool cliente=!q.value(7).isNull(), admin=!q.value(8).isNull(), eliminado=!q.value(9).isNull();
     if (q.next()) return fallo("La cuenta tiene datos duplicados. Revisa la base de datos.");

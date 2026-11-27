@@ -104,7 +104,7 @@ Mi cuenta usa tarjeta con avatar/cámara, datos con jerarquía, botón de edici�
 
 ### Inicio y simulador
 
-Formulario por pasos, monto/tasa y plazo, accesos rápidos 3/6/12/24 meses. Métricas de mensualidad, intereses y total; mensualidad destacada. Tabla debajo con ayudas en encabezados, moneda MXN y alcance sin cargos adicionales. Conectar Calcular y Guardar manteniendo composición. Explicación enlaza al tema de amortización.
+Formulario por pasos, monto/tasa y plazo, accesos rápidos 3/6/12/24 meses. Métricas de mensualidad, intereses y total; mensualidad destacada. Tabla debajo con ayudas en encabezados, moneda MXN y alcance sin cargos adicionales. Calcular y Guardar ya están conectados conservando la composición. Explicación enlaza al tema de amortización.
 Cuando cambien condiciones, indicar que se requiere recalcular: no presentar cifras viejas como nuevas. No añadir otro método «interés simple».
 
 ### Historial, detalle y PDF
@@ -174,3 +174,33 @@ de contraseñas. Cerrar sesión destruye el panel anterior; no reutiliza sus dat
 El acceso restringido muestra información real del cliente autenticado y consultas
 de apelaciones de su propiedad. El envío de apelaciones aún no está conectado.
 Los módulos no integrados conservan avisos explícitos de datos temporales.
+
+## Perfil propio persistente — 26/11/2026
+Mi cuenta y la ficha del administrador en sesión guardan datos y foto propios.
+Validaciones compartidas: nombre y ambos apellidos obligatorios, letras/espacios y
+máximo 40 caracteres; correo válido y único entre todas las cuentas; mayoría de edad;
+nueva contraseña de 8–15 caracteres, mayúscula, minúscula, número y símbolo, sin espacios.
+Para cambiarla se verifica la contraseña actual y se rechaza reutilizarla. Ambos campos
+nuevos vacíos conservan la contraseña. Se rechaza guardar cuando no hay cambios reales.
+ServicioAcceso revalida el rol/estado, usa transacción y bloqueo compartido con registro.
+Los editores esperan el resultado fuera del hilo gráfico antes de actualizar las vistas.
+
+Foto: se conserva selección/recorte; se limita entrada a 10 MiB y 12000 píxeles por lado,
+y se guarda PNG 512×512 en AppDataLocation/fotos. MySQL guarda foto_ruta, no los bytes.
+Guardar escribe un archivo nuevo, confirma SQL y retira el anterior solo dentro de la
+carpeta gestionada. Fallo SQL retira el nuevo; restablecer guarda NULL. La misma foto
+se rechaza. Respaldar base y carpeta de fotos juntas. No se requiere modificar el SQL.
+Los cambios propios del administrador registran actividad sin claves, hashes ni folios.
+Edición administrativa de terceros, directorio de clientes y sus vistas siguen pendientes.
+
+## Simulador conectado — 26/11/2026
+Formulario inicialmente vacío y métricas sin resultados ficticios. Nombre limitado a
+50 caracteres; monto/tasa/plazo se capturan como texto para evitar que un spinbox
+corrija entradas inválidas al perder foco. Punto decimal, sin separadores de miles,
+como indica la ayuda. Se conservan los accesos rápidos de plazo y el estilo de campos.
+Calcular muestra las tres métricas y todas las filas; cambiar cualquier campo limpia
+resultados y deshabilita Guardar hasta recalcular. Confirmación junto al formulario;
+no se vacían entradas tras error. Durante la escritura se bloquean controles y navegación.
+Tras éxito, otro clic o recalcular las mismas condiciones no repite el último guardado.
+La tabla tiene scroll vertical y, en ventanas estrechas, horizontal para leer los importes.
+Se inspeccionaron capturas nativas a 1180×820 y 920×700, incluida tasa 200 % a 480 meses.

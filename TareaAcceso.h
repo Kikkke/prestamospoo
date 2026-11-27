@@ -5,6 +5,17 @@
 #include <QtConcurrentRun>
 #include <QWidget>
 #include <functional>
+#include <QDialog>
+#include <QCloseEvent>
+
+// No permite cerrar el editor mientras se confirma una escritura.
+class DialogoGuardado : public QDialog {
+public:
+    using QDialog::QDialog;
+    void reject() override { if(isEnabled()) QDialog::reject(); }
+protected:
+    void closeEvent(QCloseEvent *e) override { if(!isEnabled()) e->ignore(); else QDialog::closeEvent(e); }
+};
 
 // PBKDF2 y SQL se ejecutan fuera del hilo gráfico. La conexión nace y muere allí.
 inline void ejecutarAcceso(QWidget *pantalla,

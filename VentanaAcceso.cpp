@@ -114,6 +114,7 @@ VentanaAcceso::VentanaAcceso(QSqlDatabase base, QWidget *parent) : QWidget(paren
             destino=admin;
         } else {
             auto *panel=new PanelPrincipal;
+            panel->sesionActual=sesion;
             panel->cargarPerfilSesion(sesion.nombre,sesion.paterno,sesion.materno,sesion.correo,sesion.nacimiento);
             connect(panel,&PanelPrincipal::salirSolicitado,this,salir);
             destino=panel;
