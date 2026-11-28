@@ -204,3 +204,17 @@ no se vacían entradas tras error. Durante la escritura se bloquean controles y 
 Tras éxito, otro clic o recalcular las mismas condiciones no repite el último guardado.
 La tabla tiene scroll vertical y, en ventanas estrechas, horizontal para leer los importes.
 Se inspeccionaron capturas nativas a 1180×820 y 920×700, incluida tasa 200 % a 480 meses.
+
+## Historial conectado — 27/11/2026
+Se conserva tarjeta, tabla, buscador, contador y la columna única de acciones de 144 px.
+Se añadió Actualizar para recargar o reintentar. Cargar no bloquea el hilo gráfico:
+se deshabilitan acciones mientras consulta y se informa del estado. Se distinguen
+historial vacío, búsqueda sin coincidencias, error de conexión y acceso deshabilitado.
+La búsqueda local ignora acentos/mayúsculas; los importes, tasas y plazos se ordenan
+por valor numérico. El ID acompaña cada fila y cada botón, incluso con nombres iguales.
+Eliminación: diálogo con nombre y Cancelar como opción predeterminada; la lista cambia
+solo tras commit. Un error de escritura conserva las filas; una denegación de acceso
+limpia los datos y deshabilita acciones. Búsqueda y orden se conservan al actualizar.
+La consulta de amortización está deshabilitada y explicada; doble clic/Enter no abren
+el antiguo ejemplo. Se retiraron muestras del historial y se actualizaron ayuda y textos.
+Revisión nativa a 1180×820 y 920×700: tabla, filtros y botones legibles.

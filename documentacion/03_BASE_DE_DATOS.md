@@ -212,7 +212,7 @@ Ana tiene suspensión ID1, motivo Inactividad, abierta desde esa fecha. Apelaci�
 
 - PanelAdministrador genera seis clientes con correos `cliente1@demo.mx`…`cliente6@demo.mx` y accesos relativos al día actual. SQL usa nombres completos/correos/fechas de la sección 7. Adoptar IDs y registros SQL, no fusionarlos por similitud de nombre.
 - Mi cuenta mantiene «Cliente de muestra», `cliente@demo.mx`, separado de Ana y Valeria; dejar de usar esa variable global al autenticar. Registro temporal tampoco establece automáticamente un usuario SQL.
-- Historial tiene 20 objetos locales; comparador seis objetos independientes. Dos ya coinciden con el historial y cuatro son variantes adicionales. SQL conserva 36 simulaciones globales, no 20 ni 38.
+- El prototipo histórico tenía 20 objetos locales de historial; desde el 27/11 se consulta MySQL. El comparador aún tiene seis objetos independientes. Dos ya coinciden con el historial y cuatro son variantes adicionales. SQL conserva 36 simulaciones globales, no 20 ni 38.
 - «Curso de idiomas» al 8 %/12 meses y la variante 0 %/10 meses son diferentes. El ID los distingue; el nombre no es PK.
 - Comparador tiene intereses precargados 794.25 para Computadora a 12 meses. Las cuotas SQL coherentes suman 794.23. Sustituir la cifra fija, no manipular cuotas para reproducirla.
 - `ActividadAdministrativa.h` genera 24 ejemplos de interfaz. No insertarlos como sucesos reales ni crear `actividad_demo` en el esquema final. Actividad inicia vacía y se alimenta de cambios ejecutados.
@@ -448,3 +448,11 @@ Prueba real: lectura desde otra conexión reproduce las cuotas calculadas; un tr
 exclusivo de la base de pruebas falla en la cuota 2 y no deja filas parciales. El trigger
 se retira al terminar. La base principal y el instalador no se modificaron en esta etapa.
 No hace falta borrar datos ni volver a ejecutar Financionanti.sql para usar el simulador.
+
+## Lectura y eliminación de historial — 27/11/2026
+No requiere migración ni reinstalar Financionanti.sql. Usa simulacion, cliente,
+usuario y deshabilitacion para comprobar acceso y propiedad. La eliminación escribe
+eliminada_en y actualizada_en con NOW() en una transacción; cuota permanece intacta.
+Solo se muestran registros propios con eliminada_en NULL. La cuenta bloqueada o con
+rol inválido no puede leer ni eliminar. Borrados ajenos, repetidos e IDs inexistentes
+no producen cambios. La base principal no se modificó durante las pruebas.

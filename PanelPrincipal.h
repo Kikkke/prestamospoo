@@ -11,5 +11,6 @@ public:
     Sesion sesionActual;
 signals:
     void salirSolicitado();
+    void simulacionGuardada();
     void cargarPerfilSesion(const QString &nombres, const QString &paterno, const QString &materno, const QString &correo, const QDate &nacimiento);
 };

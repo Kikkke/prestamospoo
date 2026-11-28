@@ -2,7 +2,7 @@
 #include <QSqlDatabase>
 #include <QString>
 
-// Una conexión por instancia, utilizada únicamente desde el hilo principal.
+// Una conexión por instancia, creada y utilizada dentro de un mismo hilo.
 class ConexionBD {
 public:
     ConexionBD();

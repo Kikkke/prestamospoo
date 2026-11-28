@@ -144,7 +144,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
         if (auto *b = grupo->button(i)) b->setChecked(true);
     });
     menu->addStretch();
-    menu->addWidget(texto("Historial y comparador\nen desarrollo", "muted"));
+    menu->addWidget(texto("Comparador en desarrollo", "muted"));
     connect(boton(menu, "Cerrar sesión"), &QPushButton::clicked, this, [this, pantallas]() {
         pantallas->setCurrentIndex(0);
         emit salirSolicitado();
@@ -318,6 +318,7 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
             calculo->ocupado=false;setEnabled(true);
             if(!resultado.correcto()){estado->setText(resultado.error);guardar->setEnabled(calculo->vigente);return;}
             calculo->guardado=datos;guardar->setEnabled(false);
+            emit simulacionGuardada();
             estado->setText("Simulación guardada correctamente con todas sus cuotas. "+calculo->resultado.aviso);
         });
         observador->setFuture(QtConcurrent::run([identidad,datos]() {
@@ -328,8 +329,13 @@ PanelPrincipal::PanelPrincipal(QWidget *parent) : QWidget(parent)
     });
     sim->addStretch();
 
-    auto *hist = pagina(pantallas, "Historial de simulaciones", "HISTORIAL  /  Vista de demostración. La consulta de tus simulaciones guardadas se habilitará en la siguiente etapa.", "historial.png");
-    hist->addWidget(new HistorialSimulaciones, 1);
+    auto *hist = pagina(pantallas, "Historial de simulaciones", "HISTORIAL  /  Consulta y organiza tus simulaciones guardadas.", "historial.png");
+    auto *historial=new HistorialSimulaciones;
+    hist->addWidget(historial,1);
+    connect(pantallas,&QStackedWidget::currentChanged,this,[this,historial](int pagina){
+        if(pagina==1)historial->recargar(sesionActual);
+    });
+    connect(this,&PanelPrincipal::simulacionGuardada,this,[this,historial]{historial->recargar(sesionActual);});
 
     auto *comp = pagina(pantallas, "Compara tus opciones", "COMPARADOR  /  Explora dos ejemplos y descubre cómo cambian sus pagos y plazos.", "comparador.png");
     comp->addWidget(new ComparadorSimulaciones);

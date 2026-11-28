@@ -1,6 +1,6 @@
 # Acuerdos de trabajo y memoria del proyecto
 
-Actualizado: 25/11/2026. Este documento transmite decisiones y preferencias a una persona o chat que no puede ver la conversación. El punto de entrada es [00_SISTEMA_Y_REQUERIMIENTOS.md](00_SISTEMA_Y_REQUERIMIENTOS.md). No es un permiso para realizar todos los pendientes sin que el usuario pida la siguiente etapa.
+Actualizado: 27/11/2026. Este documento transmite decisiones y preferencias a una persona o chat que no puede ver la conversación. El punto de entrada es [00_SISTEMA_Y_REQUERIMIENTOS.md](00_SISTEMA_Y_REQUERIMIENTOS.md). No es un permiso para realizar todos los pendientes sin que el usuario pida la siguiente etapa.
 
 ## 1. Cómo colaborar con el propietario
 
@@ -181,3 +181,12 @@ y pruebas, incluida la política de redondeo extremo. Etapa terminada: calcular/
 guardar. Próxima etapa: conectar historial, PDF y comparador; no presentar sus muestras
 como registros persistidos. Se actualizaron también los límites del editor administrativo
 provisional, sin convertir su edición en persistente ni ampliar el alcance a gestión.
+
+## Trabajo por módulos y aprobación de historial — 27/11/2026
+El propietario pidió presentar plan y nivel de pensamiento recomendado antes de cada
+módulo. Niveles que utiliza: mínimo, medio, alto, muy alto, máximo y ultra. Para historial
+se recomendó Astra en muy alto y el propietario dio luz verde para codificar.
+Alcance entregado: listado real, búsqueda, orden, actualización, eliminación lógica,
+permisos y pruebas. No se adelantó amortización/PDF: su botón queda deshabilitado y
+explicado. Próximo módulo propuesto: consulta de cuotas persistidas y exportación PDF;
+presentar su plan y recomendación de nivel, y esperar aprobación antes de implementarlo.

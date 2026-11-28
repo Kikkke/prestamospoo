@@ -336,3 +336,27 @@ cuota y prueba de ventana real con cambio de condiciones y doble clic. Cuatro ca
 más inicialización/cierre: 6 passed, 0 failed. El target requiere PROBAR_ACCESO=ON y
 FINANCIONANTI_CONFIG apuntando a la base aislada financionantimex_pruebas_acceso_20261126.
 La integración del motor en historial/PDF/comparador se realizará en su próxima etapa.
+
+## Servicio de historial entregado — 27/11/2026
+ServicioHistorial::listar/eliminar reciben la sesión autenticada; solo eliminar recibe
+un ID de simulación. Dentro de transacción se revalidan rol exclusivo de cliente y
+suspensión vigente. Las consultas filtran cliente_id y eliminada_en IS NULL. El UPDATE
+incluye ID, propietario y estado; exige una fila afectada. No revela datos de terceros.
+Actualiza eliminada_en y actualizada_en, sin tocar creada_en, usuario ni cuota.
+La lista posterior se lee dentro de la misma transacción y se devuelve solo tras commit.
+No se utiliza DELETE. Un fallo revierte la operación; repetir un borrado ya hecho falla.
+
+La vista usa QtConcurrent/QFutureWatcher y una ConexionBD creada dentro del trabajador.
+No comparte la conexión SQL entre hilos. Un contador de revisión descarta respuestas
+obsoletas y vuelve a cargar si hay otra solicitud pendiente. Cambiar de cuenta borra
+la lista y la búsqueda. El ID estable y desempate por ID evitan confusiones al ordenar.
+Montos se leen en centavos enteros; tasas en diezmilésimas para conservar el DECIMAL
+existente. El filtrado de nombres ocurre en memoria, sin concatenar búsquedas a SQL.
+PanelPrincipal emite simulacionGuardada tras commit para refrescar el historial.
+
+PruebasHistorial (PROBAR_ACCESO=ON): cuatro casos más inicialización/cierre, 6 passed,
+0 failed. Comprueba aislamiento de cuentas, rol/suspensión, conservación de cuotas,
+fechas de eliminación y persistencia desde otra conexión; búsqueda, orden, cancelación,
+doble clic, fallo SQL mediante trigger temporal, error/reintento de conexión, respuestas
+obsoletas y actualización automática tras guardar/entrar. Solo opera en la base aislada
+financionantimex_pruebas_acceso_20261126. Capturas e informe quedan en build-codex.

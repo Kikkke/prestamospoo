@@ -37,6 +37,13 @@ add_executable(CalculadorPrestamos WIN32
     ContenidoAyuda.h
     PantallaAyuda.h
     HistorialSimulaciones.h
+    HistorialSimulaciones.cpp
+    ServicioHistorial.h
+    ServicioHistorial.cpp
+    Amortizacion.h
+    Amortizacion.cpp
+    VentanaAmortizacion.h
+    VentanaAmortizacion.cpp
     ComparadorSimulaciones.h
 )
 target_compile_definitions(CalculadorPrestamos PRIVATE ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets")
@@ -75,4 +82,24 @@ if(PROBAR_ACCESO)
         Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent)
     add_custom_command(TARGET PruebasSimulador POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/runtime" "$<TARGET_FILE_DIR:PruebasSimulador>")
+    add_executable(PruebasHistorial pruebas/PruebasHistorial.cpp ${FUENTES_APP})
+    target_include_directories(PruebasHistorial PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_compile_definitions(PruebasHistorial PRIVATE
+        ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        CONFIG_LOCAL="${CMAKE_CURRENT_SOURCE_DIR}/conexion.local.ini")
+    target_link_libraries(PruebasHistorial PRIVATE Qt${QT_VERSION_MAJOR}::Test
+        Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Sql
+        Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent)
+    add_custom_command(TARGET PruebasHistorial POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/runtime" "$<TARGET_FILE_DIR:PruebasHistorial>")
+    add_executable(PruebasAmortizacion pruebas/PruebasAmortizacion.cpp ${FUENTES_APP})
+    target_include_directories(PruebasAmortizacion PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_compile_definitions(PruebasAmortizacion PRIVATE
+        ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        CONFIG_LOCAL="${CMAKE_CURRENT_SOURCE_DIR}/conexion.local.ini")
+    target_link_libraries(PruebasAmortizacion PRIVATE Qt${QT_VERSION_MAJOR}::Test
+        Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Sql
+        Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent)
+    add_custom_command(TARGET PruebasAmortizacion POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/runtime" "$<TARGET_FILE_DIR:PruebasAmortizacion>")
 endif()

@@ -48,7 +48,7 @@ No terminar el proceso de la aplicación del usuario sin avisar; para pruebas us
 | Login | Autenticación MySQL/PBKDF2, folio de la cuenta, rol, suspensión y cierre de sesión por ID | Integrar autorización y persistencia de los módulos restantes |
 | Registro | Validación compartida, ambos apellidos obligatorios, términos manuales y alta transaccional usuario + cliente | Sin pendientes de este flujo en el alcance acordado |
 | Inicio | Validación, motor en centavos, tabla completa, recalcular tras cambios y guardado atómico en MySQL | Conectar historial, detalle/PDF y comparador con las simulaciones guardadas |
-| Historial | 20 registros locales, búsqueda, iconos, borrado temporal | Consulta del propietario y eliminación lógica SQL |
+| Historial | Registros del propietario desde MySQL; búsqueda, orden numérico, actualización y eliminación lógica persistente | Habilitar consulta de amortización y PDF en la siguiente etapa |
 | Amortización/PDF | Cálculo local de condiciones de la fila y PDF multipágina | Consultar cuotas guardadas coherentes y fechas reales |
 | Comparador | Seis opciones y resultados precargados independientes | Usar historial del propietario y eliminar resultados hardcodeados |
 | Mi cuenta/fotos | Perfil propio, contraseña y foto persistentes; validaciones y rechazo de cambios vacíos | Integrar las fichas de clientes de administración |
@@ -846,3 +846,11 @@ carpeta Debug. Se configuró CMAKE_RUNTIME_OUTPUT_DIRECTORY en su caché local p
 usar build/Desktop_Qt_6_12_0_MinGW_64_bit_Debug/bin, donde compiló correctamente.
 Qt Creator utiliza el target CalculadorPrestamos: volver a ejecutar CMake para
 refrescar la ruta antes de Ctrl+R. No se cambió esta ruta en el CMakeLists compartido.
+
+## Historial real — 27/11/2026
+El módulo ya consulta únicamente las simulaciones vigentes del cliente en sesión.
+Carga al entrar, después de guardar y con Actualizar; conserva búsqueda y orden al
+recargar. Eliminación lógica confirmada y persistente; conserva registros y cuotas.
+HistorialSimulaciones.h/.cpp contiene la vista y ServicioHistorial.h/.cpp las consultas.
+La tabla de amortización/PDF del historial permanece deshabilitada según el alcance
+aprobado. El comparador todavía utiliza ejemplos independientes. No se modificó el SQL.
